@@ -8,14 +8,15 @@ import {
   FlatList,
   useColorScheme,
   TextInput,
-  Platform
+  Platform,
+  StatusBar
 } from 'react-native';
 import { ChevronDown, Search } from 'lucide-react-native';
 import Animated, { 
   FadeIn, 
   FadeOut, 
-  SlideInDown, 
-  SlideOutDown 
+  SlideInUp,
+  SlideOutDown
 } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -58,17 +59,21 @@ export function ModelSelector() {
           styles.modelItem,
           isSelected && {
             backgroundColor: item.color
-              ? `${item.color}20`
+              ? `${item.color}15`
               : Colors[colorScheme ?? 'light'].tintTransparent,
           },
-          Platform.OS === 'android' && pressed && {
-            backgroundColor: Colors[colorScheme ?? 'light'].ripple,
+          Platform.OS === 'android' && {
+            elevation: pressed ? 0 : 1,
+            backgroundColor: pressed 
+              ? Colors[colorScheme ?? 'light'].ripple
+              : Colors[colorScheme ?? 'light'].cardBackground,
           }
         ]}
         onPress={() => handleSelectModel(item)}
         android_ripple={{
           color: Colors[colorScheme ?? 'light'].ripple,
           borderless: true,
+          foreground: true,
         }}
       >
         <View style={[
@@ -114,15 +119,22 @@ export function ModelSelector() {
       <Pressable 
         style={({ pressed }) => [
           styles.selector,
-          { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground },
-          Platform.OS === 'android' && pressed && {
-            backgroundColor: Colors[colorScheme ?? 'light'].ripple,
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+          },
+          Platform.OS === 'android' && {
+            elevation: pressed ? 0 : 2,
+            backgroundColor: pressed 
+              ? Colors[colorScheme ?? 'light'].ripple
+              : Colors[colorScheme ?? 'light'].cardBackground,
           }
         ]}
         onPress={handleOpenModal}
         android_ripple={{
           color: Colors[colorScheme ?? 'light'].ripple,
           borderless: true,
+          foreground: true,
         }}
       >
         <View style={[
@@ -136,8 +148,8 @@ export function ModelSelector() {
           {selectedModel?.name || 'Select Model'}
         </Text>
         <ChevronDown 
-          size={16} 
-          color={Colors[colorScheme ?? 'light'].textSecondary} 
+          size={20} 
+          color={Colors[colorScheme ?? 'light'].textSecondary}
           strokeWidth={2.5}
         />
       </Pressable>
@@ -152,25 +164,26 @@ export function ModelSelector() {
           setSearchQuery('');
         }}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => {
-            setModalVisible(false);
-            setSearchQuery('');
-          }}
+        <StatusBar backgroundColor="rgba(0, 0, 0, 0.5)" />
+        <Animated.View 
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+          ]}
         >
-          <Animated.View 
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
-            ]}
+          <Pressable 
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setModalVisible(false);
+              setSearchQuery('');
+            }}
           />
-        </Pressable>
+        </Animated.View>
         
         <Animated.View
-          entering={SlideInDown.springify().damping(15)}
+          entering={SlideInUp.duration(300).springify()}
           exiting={SlideOutDown.duration(200)}
           style={[
             styles.modalContent,
@@ -195,7 +208,7 @@ export function ModelSelector() {
           ]}>
             <Search 
               size={20} 
-              color={Colors[colorScheme ?? 'light'].textSecondary} 
+              color={Colors[colorScheme ?? 'light'].textSecondary}
               strokeWidth={2.2}
             />
             <TextInput
@@ -216,9 +229,9 @@ export function ModelSelector() {
             renderItem={renderModelItem}
             keyExtractor={(item) => item.id}
             style={styles.modelList}
+            contentContainerStyle={styles.modelListContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.modelListContent}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Text style={[
@@ -243,9 +256,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Platform.select({ ios: 8, android: 6 }),
     borderRadius: 16,
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+    borderWidth: Platform.OS === 'ios' ? 1 : 0,
+    overflow: 'hidden',
   },
   selectedModelText: {
+    flex: 1,
     marginLeft: 8,
     marginRight: 4,
     fontSize: 14,
@@ -301,7 +316,7 @@ const styles = StyleSheet.create({
   },
   modelListContent: {
     padding: 16,
-    paddingTop: 0,
+    paddingTop: 8,
   },
   modelItem: {
     flexDirection: 'row',
@@ -310,7 +325,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 8,
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+    overflow: 'hidden',
+    ...(Platform.OS === 'ios' ? {
+      backgroundColor: Colors.light.cardBackground,
+      borderWidth: 1,
+      borderColor: Colors.light.cardBorder,
+    } : {
+      elevation: 2,
+    }),
   },
   modelDot: {
     width: 10,
