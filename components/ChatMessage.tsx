@@ -1,8 +1,9 @@
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { Copy, CircleCheck as CheckCircle2 } from 'lucide-react-native';
+import { Copy, CircleCheck as CheckCircle2, Volume2 } from 'lucide-react-native';
 import { useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
+import * as Speech from 'expo-speech';
 import Animated, { 
   FadeInDown, 
   useAnimatedStyle, 
@@ -37,6 +38,7 @@ function formatMessage(text: string): string {
 export function ChatMessage({ message, isUser, animate = false }: ChatMessageProps) {
   const colorScheme = useColorScheme();
   const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scale = useSharedValue(1);
 
   const handleCopy = async () => {
@@ -51,6 +53,19 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
     setTimeout(() => {
       setCopied(false);
     }, 2000);
+  };
+
+  const handleSpeak = async () => {
+    if (isSpeaking) {
+      await Speech.stop();
+      setIsSpeaking(false);
+    } else {
+      setIsSpeaking(true);
+      await Speech.speak(formatMessage(message), {
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    }
   };
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -96,19 +111,34 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
       </View>
       
       {!isUser && (
-        <Pressable 
-          style={[
-            styles.copyButton,
-            { backgroundColor: Colors[colorScheme ?? 'light'].background }
-          ]} 
-          onPress={handleCopy}
-        >
-          {copied ? (
-            <CheckCircle2 size={16} color="#10B981" />
-          ) : (
-            <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-          )}
-        </Pressable>
+        <View style={styles.actionButtons}>
+          <Pressable 
+            style={[
+              styles.actionButton,
+              { backgroundColor: Colors[colorScheme ?? 'light'].background }
+            ]} 
+            onPress={handleCopy}
+          >
+            {copied ? (
+              <CheckCircle2 size={16} color="#10B981" />
+            ) : (
+              <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            )}
+          </Pressable>
+
+          <Pressable 
+            style={[
+              styles.actionButton,
+              { backgroundColor: Colors[colorScheme ?? 'light'].background }
+            ]} 
+            onPress={handleSpeak}
+          >
+            <Volume2 
+              size={16} 
+              color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
+            />
+          </Pressable>
+        </View>
       )}
     </Animated.View>
   );
@@ -136,10 +166,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     lineHeight: 24,
   },
-  copyButton: {
+  actionButtons: {
     position: 'absolute',
     bottom: -8,
     right: 8,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     borderRadius: 12,
     width: 24,
     height: 24,

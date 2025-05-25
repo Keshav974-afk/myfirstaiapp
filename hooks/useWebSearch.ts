@@ -7,6 +7,8 @@ interface SearchResult {
   snippet: string;
 }
 
+const SEARCH_API_URL = 'https://api.duckduckgo.com/';
+
 export function useWebSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const { webSearchEnabled } = useAppSettings();
@@ -16,33 +18,14 @@ export function useWebSearch() {
 
     setIsSearching(true);
     try {
-      // Use the browser's built-in search functionality
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-      const response = await fetch(searchUrl);
-      const html = await response.text();
+      const response = await fetch(`${SEARCH_API_URL}?q=${encodeURIComponent(query)}&format=json`);
+      const data = await response.json();
 
-      // Parse the search results
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const searchResults: SearchResult[] = [];
-
-      // Extract search results
-      const results = doc.querySelectorAll('.g');
-      results.forEach((result) => {
-        const titleElement = result.querySelector('h3');
-        const linkElement = result.querySelector('a');
-        const snippetElement = result.querySelector('.VwiC3b');
-
-        if (titleElement && linkElement && snippetElement) {
-          searchResults.push({
-            title: titleElement.textContent || '',
-            url: linkElement.href,
-            snippet: snippetElement.textContent || '',
-          });
-        }
-      });
-
-      return searchResults;
+      return data.RelatedTopics.map((topic: any) => ({
+        title: topic.Text?.split(' - ')[0] || '',
+        snippet: topic.Text || '',
+        url: topic.FirstURL || '',
+      })).slice(0, 5);
     } catch (error) {
       console.error('Web search error:', error);
       return [];
