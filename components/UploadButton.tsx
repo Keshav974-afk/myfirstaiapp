@@ -2,7 +2,6 @@ import { StyleSheet, View, Pressable } from 'react-native';
 import { Image as ImageIcon, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
 
@@ -24,8 +23,8 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.7, // Reduced quality for better performance
-        base64: true,
+        quality: 0.7,
+        base64: false, // Disable base64 encoding
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -46,7 +45,7 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false, // Don't copy to cache to save memory
       });
 
       if (result.assets && result.assets[0]) {
