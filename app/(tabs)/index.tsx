@@ -116,9 +116,9 @@ export default function ChatScreen() {
 
     let prompt = '';
     if (file.type === 'image') {
-      prompt = `[Analyzing image...]\n\nI'm sharing an image with you. Here's the base64-encoded image data:\n\ndata:image/jpeg;base64,${file.base64}\n\nPlease analyze this image and describe what you see in detail.`;
+      prompt = `[Analyzing image...]\n\nI'm sharing an image with you. Please analyze this image at ${file.uri} and describe what you see in detail.`;
     } else {
-      prompt = `[Analyzing document: ${file.name}]\n\nHere's the base64-encoded content of the document:\n\ndata:application/octet-stream;base64,${file.base64}\n\nPlease help me understand or analyze this document.`;
+      prompt = `[Analyzing document: ${file.name}]\n\nPlease help me understand or analyze this document at ${file.uri}.`;
     }
 
     await sendMessage(prompt);
