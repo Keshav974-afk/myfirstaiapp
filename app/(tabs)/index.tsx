@@ -57,6 +57,40 @@ export default function ChatScreen() {
   const inputHeight = useSharedValue(50);
   const keyboardVisible = useSharedValue(0);
 
+  // Add keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        keyboardVisible.value = withTiming(1);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        keyboardVisible.value = withTiming(0);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
+  const animatedInputStyle = useAnimatedStyle(() => {
+    return {
+      height: interpolate(keyboardVisible.value, [0, 1], [50, 100]),
+      minHeight: 50,
+      maxHeight: 100,
+    };
+  });
+
+  const handleChangeText = (text: string) => {
+    setMessage(text);
+    inputHeight.value = withTiming(Math.min(100, 50 + text.length * 0.5));
+  };
+
   const handleUpload = async (file: any) => {
     if (!file) return;
 
@@ -72,6 +106,13 @@ export default function ChatScreen() {
 
   const handleSpeechResult = (text: string) => {
     setMessage(text);
+  };
+
+  const handleSendMessage = async () => {
+    if (message.trim() === '' || isLoading) return;
+    await sendMessage(message);
+    setMessage('');
+    inputHeight.value = withTiming(50);
   };
 
   return (
@@ -126,9 +167,36 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  inputContainer: {
+    width: '100%',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingHorizontal: 12,
+  },
   inputActions: {
     flexDirection: 'row',
     gap: 8,
     paddingRight: 8,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });
