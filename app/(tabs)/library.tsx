@@ -23,6 +23,10 @@ export default function LibraryScreen() {
     }
   };
 
+  const handleImageError = (index: number) => {
+    console.warn(`Failed to load image at index ${index}`);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={[
@@ -61,7 +65,7 @@ export default function LibraryScreen() {
           <View style={styles.imageGrid}>
             {generatedImages.map((image, index) => (
               <View 
-                key={index}
+                key={`${image.url}-${index}`}
                 style={[
                   styles.imageCard,
                   { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
@@ -71,6 +75,7 @@ export default function LibraryScreen() {
                   source={{ uri: image.url }}
                   style={styles.image}
                   resizeMode="cover"
+                  onError={() => handleImageError(index)}
                 />
                 <View style={styles.imageOverlay}>
                   <Text style={styles.imageDate}>
