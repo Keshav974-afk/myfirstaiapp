@@ -1,34 +1,37 @@
-const tintColorLight = '#0A84FF';
-const tintColorDark = '#0A84FF';
+const tintColorLight = '#0066FF';
+const tintColorDark = '#3B82F6';
 
 export default {
   light: {
-    text: '#000000',
+    text: '#1A1A1A',
     textSecondary: '#666666',
     background: '#FFFFFF',
     tint: tintColorLight,
-    tintTransparent: 'rgba(10, 132, 255, 0.2)',
+    tintTransparent: 'rgba(0, 102, 255, 0.1)',
     tabIconDefault: '#CCCCCC',
     tabIconSelected: tintColorLight,
-    userBubble: '#0A84FF',
+    userBubble: 'rgba(0, 102, 255, 0.95)',
     userBubbleText: '#FFFFFF',
-    aiBubble: '#F2F2F7',
-    aiBubbleText: '#000000',
-    inputBackground: '#F2F2F7',
-    border: 'rgba(0, 0, 0, 0.1)',
+    aiBubble: '#F8F9FB',
+    aiBubbleText: '#1A1A1A',
+    inputBackground: '#F8F9FB',
+    border: 'rgba(0, 0, 0, 0.06)',
     sidebarBackground: '#FFFFFF',
     danger: '#DC2626',
-    dangerBackground: '#FEE2E2',
+    dangerBackground: '#FEF2F2',
+    cardBackground: '#FFFFFF',
+    cardBorder: 'rgba(0, 0, 0, 0.04)',
+    cardShadow: 'rgba(0, 0, 0, 0.1)',
   },
   dark: {
     text: '#FFFFFF',
     textSecondary: '#A0A0A0',
     background: '#000000',
     tint: tintColorDark,
-    tintTransparent: 'rgba(10, 132, 255, 0.2)',
+    tintTransparent: 'rgba(59, 130, 246, 0.15)',
     tabIconDefault: '#666666',
     tabIconSelected: tintColorDark,
-    userBubble: '#0A84FF',
+    userBubble: 'rgba(59, 130, 246, 0.95)',
     userBubbleText: '#FFFFFF',
     aiBubble: '#1C1C1E',
     aiBubbleText: '#FFFFFF',
@@ -37,5 +40,8 @@ export default {
     sidebarBackground: '#1C1C1E',
     danger: '#EF4444',
     dangerBackground: '#3A1C1C',
+    cardBackground: '#1C1C1E',
+    cardBorder: 'rgba(255, 255, 255, 0.1)',
+    cardShadow: 'rgba(0, 0, 0, 0.3)',
   },
 };

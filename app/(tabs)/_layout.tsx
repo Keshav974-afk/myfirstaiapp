@@ -11,14 +11,26 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         tabBarStyle: {
-          height: 60,
+          height: 65,
           paddingBottom: 10,
           borderTopWidth: 1,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          elevation: 10,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
           fontSize: 12,
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
         headerShown: false,
       }}>
@@ -26,8 +38,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color, size }) => (
-            <MessageSquare size={size} color={color} />
+          tabBarIcon: ({ size, color }) => (
+            <MessageSquare size={size} color={color} strokeWidth={2.2} />
           ),
         }}
       />
@@ -35,8 +47,8 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color, size }) => (
-            <Search size={size} color={color} />
+          tabBarIcon: ({ size, color }) => (
+            <Search size={size} color={color} strokeWidth={2.2} />
           ),
         }}
       />
@@ -44,8 +56,8 @@ export default function TabLayout() {
         name="library"
         options={{
           title: 'Library',
-          tabBarIcon: ({ color, size }) => (
-            <Library size={size} color={color} />
+          tabBarIcon: ({ size, color }) => (
+            <Library size={size} color={color} strokeWidth={2.2} />
           ),
         }}
       />
@@ -53,8 +65,8 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Settings size={size} color={color} />
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} strokeWidth={2.2} />
           ),
         }}
       />

@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { Search, Sparkles, Zap, Brain, Globe as Globe2 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 const CATEGORIES = [
   {
     title: 'Featured',
     icon: Sparkles,
+    color: '#8B5CF6',
     items: [
       'Write a blog post',
       'Generate images',
@@ -18,6 +20,7 @@ const CATEGORIES = [
   {
     title: 'Popular',
     icon: Zap,
+    color: '#F59E0B',
     items: [
       'Summarize text',
       'Translation',
@@ -28,6 +31,7 @@ const CATEGORIES = [
   {
     title: 'Learning',
     icon: Brain,
+    color: '#10B981',
     items: [
       'Study notes',
       'Practice problems',
@@ -38,6 +42,7 @@ const CATEGORIES = [
   {
     title: 'Research',
     icon: Globe2,
+    color: '#3B82F6',
     items: [
       'Literature review',
       'Data analysis',
@@ -70,7 +75,8 @@ export default function ExploreScreen() {
       ]}>
         <Search 
           size={20} 
-          color={Colors[colorScheme ?? 'light'].textSecondary} 
+          color={Colors[colorScheme ?? 'light'].textSecondary}
+          strokeWidth={2.2}
         />
         <TextInput
           style={[
@@ -82,13 +88,21 @@ export default function ExploreScreen() {
         />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {CATEGORIES.map((category, index) => (
-          <View key={index} style={styles.category}>
+          <Animated.View 
+            key={index}
+            entering={FadeInDown.delay(index * 100).springify()}
+            style={styles.category}
+          >
             <View style={styles.categoryHeader}>
               <category.icon 
                 size={24} 
-                color={Colors[colorScheme ?? 'light'].tint} 
+                color={category.color}
+                strokeWidth={2.2}
               />
               <Text style={[
                 styles.categoryTitle,
@@ -102,9 +116,13 @@ export default function ExploreScreen() {
               {category.items.map((item, itemIndex) => (
                 <Pressable
                   key={itemIndex}
-                  style={[
+                  style={({ pressed }) => [
                     styles.itemCard,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
+                    { 
+                      backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
+                      borderColor: Colors[colorScheme ?? 'light'].cardBorder,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    }
                   ]}
                 >
                   <Text style={[
@@ -116,7 +134,7 @@ export default function ExploreScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
+          </Animated.View>
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -133,7 +151,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
   },
   searchContainer: {
@@ -141,7 +159,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 16,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   searchInput: {
     flex: 1,
@@ -162,9 +180,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   categoryTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
-    marginLeft: 8,
+    marginLeft: 12,
   },
   itemsGrid: {
     flexDirection: 'row',
@@ -174,10 +192,20 @@ const styles = StyleSheet.create({
   itemCard: {
     width: '48%',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   itemText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter-Medium',
+    lineHeight: 20,
   },
 });
