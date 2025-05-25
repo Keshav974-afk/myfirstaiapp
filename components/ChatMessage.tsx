@@ -11,13 +11,12 @@ import Animated, {
   useSharedValue, 
   withSequence, 
   withTiming,
-  FadeIn,
-  FadeOut,
   SlideInUp,
   SlideOutDown
 } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { ImagePreview } from './ImagePreview';
+import { MathBlock } from './MathBlock';
 
 interface ChatMessageProps {
   message: string;
@@ -58,6 +57,95 @@ function formatMessage(text: string): string {
     .replace(/###\s*(.*?)(\n|$)/g, '$1')
     .replace(/^\s*[-*]\s+/gm, '• ')
     .trim();
+}
+
+function extractMathBlocks(text: string): { type: 'text' | 'math' | 'image', content: string, inline?: boolean }[] {
+  const parts: { type: 'text' | 'math' | 'image', content: string, inline?: boolean }[] = [];
+  let currentText = '';
+
+  // Split the text by math delimiters
+  const regex = /(\\\[.*?\\\]|\\\(.*?\\\)|\$\$.*?\$\$|\$.*?\$)/gs;
+  const matches = text.split(regex);
+
+  matches.forEach(part => {
+    if (part.trim() === '') return;
+
+    if (part.startsWith('\\[') && part.endsWith('\\]')) {
+      // Display math
+      if (currentText) {
+        parts.push({ type: 'text', content: currentText });
+        currentText = '';
+      }
+      parts.push({ 
+        type: 'math', 
+        content: part.slice(2, -2).trim(),
+        inline: false
+      });
+    } else if (part.startsWith('\\(') && part.endsWith('\\)')) {
+      // Inline math
+      if (currentText) {
+        parts.push({ type: 'text', content: currentText });
+        currentText = '';
+      }
+      parts.push({ 
+        type: 'math', 
+        content: part.slice(2, -2).trim(),
+        inline: true
+      });
+    } else if (part.startsWith('$$') && part.endsWith('$$')) {
+      // Display math (alternative syntax)
+      if (currentText) {
+        parts.push({ type: 'text', content: currentText });
+        currentText = '';
+      }
+      parts.push({ 
+        type: 'math', 
+        content: part.slice(2, -2).trim(),
+        inline: false
+      });
+    } else if (part.startsWith('$') && part.endsWith('$')) {
+      // Inline math (alternative syntax)
+      if (currentText) {
+        parts.push({ type: 'text', content: currentText });
+        currentText = '';
+      }
+      parts.push({ 
+        type: 'math', 
+        content: part.slice(1, -1).trim(),
+        inline: true
+      });
+    } else {
+      currentText += part;
+    }
+  });
+
+  if (currentText) {
+    parts.push({ type: 'text', content: currentText });
+  }
+
+  // Process images in text parts
+  const processedParts: typeof parts = [];
+  parts.forEach(part => {
+    if (part.type === 'text') {
+      const imageUrl = extractImageUrl(part.content);
+      if (imageUrl) {
+        const textParts = part.content.split(new RegExp(`(${imageUrl})`));
+        textParts.forEach(textPart => {
+          if (textPart === imageUrl) {
+            processedParts.push({ type: 'image', content: imageUrl });
+          } else if (textPart.trim()) {
+            processedParts.push({ type: 'text', content: formatMessage(textPart) });
+          }
+        });
+      } else {
+        processedParts.push({ type: 'text', content: formatMessage(part.content) });
+      }
+    } else {
+      processedParts.push(part);
+    }
+  });
+
+  return processedParts;
 }
 
 export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMessageProps) {
@@ -163,8 +251,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
     };
   });
 
-  const imageUrl = extractImageUrl(message);
-  const formattedMessage = formatMessage(message);
+  const parts = extractMathBlocks(message);
 
   return (
     <View style={[
@@ -191,20 +278,38 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
               : { backgroundColor: Colors[colorScheme ?? 'light'].aiBubble }
           ]}>
             <View>
-              {formattedMessage ? (
-                <Text style={[
-                  styles.messageText,
-                  isUser 
-                    ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
-                    : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
-                ]}>
-                  {formattedMessage}
-                </Text>
-              ) : null}
-              
-              {imageUrl && (
-                <ImagePreview imageUrl={imageUrl} />
-              )}
+              {parts.map((part, index) => {
+                if (part.type === 'text') {
+                  return (
+                    <Text 
+                      key={index}
+                      style={[
+                        styles.messageText,
+                        isUser 
+                          ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
+                          : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
+                      ]}
+                    >
+                      {part.content}
+                    </Text>
+                  );
+                } else if (part.type === 'math') {
+                  return (
+                    <MathBlock 
+                      key={index}
+                      formula={part.content}
+                      inline={part.inline}
+                    />
+                  );
+                } else if (part.type === 'image') {
+                  return (
+                    <ImagePreview 
+                      key={index}
+                      imageUrl={part.content}
+                    />
+                  );
+                }
+              })}
             </View>
           </View>
         </Pressable>
@@ -367,3 +472,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
+
+export { ChatMessage }
