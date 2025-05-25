@@ -3,6 +3,7 @@ import { StyleSheet, View, Pressable, Platform, Text, Animated } from 'react-nat
 import { Mic } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
+import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
 
 interface VoiceButtonProps {
   onSpeechResult?: (text: string) => void;
@@ -13,6 +14,34 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+        if (e.value && e.value[0] && onSpeechResult) {
+          onSpeechResult(e.value[0]);
+        }
+        setIsListening(false);
+      };
+
+      Voice.onSpeechError = (e: SpeechErrorEvent) => {
+        let errorMessage = 'Speech recognition error. Try again.';
+        if (e.error?.message) {
+          if (e.error.message.includes('network')) {
+            errorMessage = 'Network error. Check your connection.';
+          } else if (e.error.message.includes('permission')) {
+            errorMessage = 'Microphone access denied.';
+          }
+        }
+        showError(errorMessage);
+        setIsListening(false);
+      };
+
+      return () => {
+        Voice.destroy().then(Voice.removeAllListeners);
+      };
+    }
+  }, [onSpeechResult]);
 
   const showError = (message: string) => {
     setError(message);
@@ -32,12 +61,12 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   };
 
   const startListening = async () => {
-    if (Platform.OS === 'web') {
-      try {
-        setIsListening(true);
-        setError(null);
-        
-        // @ts-ignore
+    try {
+      setIsListening(true);
+      setError(null);
+
+      if (Platform.OS === 'web') {
+        // Web implementation using Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
           throw new Error('Speech recognition not supported');
@@ -81,17 +110,30 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
         };
 
         recognition.start();
-      } catch (error) {
-        console.error('Speech recognition error:', error);
-        showError('Speech recognition not supported');
-        setIsListening(false);
+      } else {
+        // Mobile implementation using react-native-voice
+        try {
+          await Voice.start('en-US');
+        } catch (e) {
+          showError('Failed to start speech recognition');
+          setIsListening(false);
+        }
       }
-    } else {
-      showError('Speech recognition not available on this platform');
+    } catch (error) {
+      console.error('Speech recognition error:', error);
+      showError('Speech recognition not supported');
+      setIsListening(false);
     }
   };
 
-  const stopListening = () => {
+  const stopListening = async () => {
+    if (Platform.OS !== 'web') {
+      try {
+        await Voice.stop();
+      } catch (e) {
+        console.error('Error stopping voice recognition:', e);
+      }
+    }
     setIsListening(false);
   };
 
