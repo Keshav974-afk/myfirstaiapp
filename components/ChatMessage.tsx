@@ -426,14 +426,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: Colors.light.cardShadow,
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+    } : {
+      elevation: 2,
+    }),
   },
   messageText: {
     fontSize: 16,
@@ -448,13 +451,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 24,
     zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 5,
     borderWidth: 1,
     borderColor: Colors.light.cardBorder,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: Colors.light.cardShadow,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 3.84,
+    } : {
+      elevation: 5,
+    }),
   },
   actionButtons: {
     flexDirection: 'row',

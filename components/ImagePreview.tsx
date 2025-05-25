@@ -149,11 +149,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: Colors.light.cardShadow,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    } : {
+      elevation: 5,
+    }),
   },
   viewButtonText: {
     color: '#FFFFFF',
