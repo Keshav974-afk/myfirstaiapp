@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TextInput, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ScrollView, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { Search, Sparkles, Zap, Brain, Globe as Globe2 } from 'lucide-react-native';
@@ -122,6 +122,17 @@ export default function ExploreScreen() {
                       backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
                       borderColor: Colors[colorScheme ?? 'light'].cardBorder,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
+                      ...(Platform.OS === 'ios' ? {
+                        shadowColor: Colors[colorScheme ?? 'light'].cardShadow,
+                        shadowOffset: {
+                          width: 0,
+                          height: 2,
+                        },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 3,
+                      } : {
+                        elevation: 3,
+                      }),
                     }
                   ]}
                 >
@@ -194,14 +205,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
   },
   itemText: {
     fontSize: 15,

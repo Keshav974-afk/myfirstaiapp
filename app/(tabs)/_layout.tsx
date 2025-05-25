@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import { MessageSquare, Search, Library, Settings } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 
@@ -15,14 +15,17 @@ export default function TabLayout() {
           paddingBottom: 10,
           borderTopWidth: 1,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: -2,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 3,
-          elevation: 10,
+          ...(Platform.OS === 'ios' ? {
+            shadowColor: Colors[colorScheme ?? 'light'].cardShadow,
+            shadowOffset: {
+              width: 0,
+              height: -2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+          } : {
+            elevation: 10,
+          }),
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
