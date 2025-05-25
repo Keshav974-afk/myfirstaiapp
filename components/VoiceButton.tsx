@@ -16,9 +16,16 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
     if (Platform.OS === 'web') {
       try {
         setIsListening(true);
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        // @ts-ignore
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          throw new Error('Speech recognition not supported');
+        }
+
+        const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
+        recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
           const text = event.results[0][0].transcript;
@@ -28,7 +35,8 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
           setIsListening(false);
         };
 
-        recognition.onerror = () => {
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
           setIsListening(false);
         };
 
@@ -44,6 +52,16 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
     }
   };
 
+  const stopListening = () => {
+    setIsListening(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       <Pressable
@@ -52,7 +70,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
           { backgroundColor: Colors[colorScheme ?? 'light'].tint },
           isListening && styles.activeButton
         ]}
-        onPress={startListening}
+        onPress={isListening ? stopListening : startListening}
       >
         <Mic size={20} color="#FFFFFF" />
       </Pressable>
