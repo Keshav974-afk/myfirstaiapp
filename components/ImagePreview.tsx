@@ -1,5 +1,5 @@
 import { StyleSheet, View, Image, Pressable, Text, Platform } from 'react-native';
-import { ExternalLink } from 'lucide-react-native';
+import { ExternalLink, RefreshCw } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
 import * as WebBrowser from 'expo-web-browser';
@@ -13,6 +13,7 @@ interface ImagePreviewProps {
 export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
   const colorScheme = useColorScheme();
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleViewImage = async () => {
     try {
@@ -28,7 +29,18 @@ export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
 
   const handleImageError = () => {
     setError(true);
+    setLoading(false);
     console.warn('Failed to load image:', imageUrl);
+  };
+
+  const handleImageLoad = () => {
+    setLoading(false);
+    setError(false);
+  };
+
+  const handleRetry = () => {
+    setError(false);
+    setLoading(true);
   };
 
   if (error) {
@@ -48,8 +60,9 @@ export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
             styles.retryButton,
             { backgroundColor: Colors[colorScheme ?? 'light'].danger }
           ]}
-          onPress={() => setError(false)}
+          onPress={handleRetry}
         >
+          <RefreshCw size={16} color="#FFFFFF" />
           <Text style={styles.retryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -59,11 +72,28 @@ export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
   return (
     <View style={styles.container}>
       <View style={styles.imageWrapper}>
+        {loading && (
+          <View style={[
+            styles.loadingContainer,
+            { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
+          ]}>
+            <Text style={[
+              styles.loadingText,
+              { color: Colors[colorScheme ?? 'light'].textSecondary }
+            ]}>
+              Loading image...
+            </Text>
+          </View>
+        )}
         <Image 
           source={{ uri: imageUrl }} 
-          style={styles.image}
+          style={[
+            styles.image,
+            loading && styles.hiddenImage
+          ]}
           resizeMode="cover"
           onError={handleImageError}
+          onLoad={handleImageLoad}
         />
         <View style={styles.overlay} />
         <Pressable
@@ -96,6 +126,9 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  hiddenImage: {
+    opacity: 0,
   },
   overlay: {
     position: 'absolute',
@@ -140,12 +173,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
     color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    marginLeft: 8,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },

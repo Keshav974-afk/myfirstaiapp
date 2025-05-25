@@ -26,7 +26,17 @@ export function useChatService() {
         }
 
         if (storedImages) {
-          setGeneratedImages(JSON.parse(storedImages));
+          const images = JSON.parse(storedImages);
+          // Filter out any invalid URLs
+          const validImages = images.filter((img: GeneratedImage) => {
+            try {
+              new URL(img.url);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          setGeneratedImages(validImages);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -87,9 +97,11 @@ export function useChatService() {
     }
 
     // Match Snapzion workspace URLs
-    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.[a-z]+/gi;
+    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+(?:\.[a-z]+)?/gi;
     while ((match = workspacePattern.exec(content)) !== null) {
-      urls.push(match[0].trim());
+      const url = match[0].trim();
+      // Ensure URL ends with an extension if missing
+      urls.push(url.endsWith('.png') ? url : `${url}.png`);
     }
 
     // Remove duplicates and validate URLs
@@ -98,6 +110,7 @@ export function useChatService() {
         new URL(url);
         return true;
       } catch {
+        console.warn('Invalid URL found:', url);
         return false;
       }
     });
@@ -106,16 +119,23 @@ export function useChatService() {
   const addGeneratedImage = useCallback((imageUrl: string) => {
     try {
       // Validate and normalize the URL
-      const url = new URL(imageUrl);
+      let url = imageUrl;
+      
+      // Handle Snapzion URLs without extension
+      if (url.includes('cdn.snapzion.com') && !url.match(/\.[a-z]+$/i)) {
+        url = `${url}.png`;
+      }
+
+      const validatedUrl = new URL(url);
       
       setGeneratedImages(prev => {
         // Check if image already exists
-        if (prev.some(img => img.url === url.href)) {
+        if (prev.some(img => img.url === validatedUrl.href)) {
           return prev;
         }
 
         const newImage: GeneratedImage = {
-          url: url.href,
+          url: validatedUrl.href,
           createdAt: Date.now()
         };
 
