@@ -1,6 +1,6 @@
 import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { Copy, CircleCheck as CheckCircle2, Volume2, Share2, Bookmark, Edit3 } from 'lucide-react-native';
+import { Copy, CircleCheck as CheckCircle2, Volume2, Share2, Bookmark, CreditCard as Edit3 } from 'lucide-react-native';
 import { useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
