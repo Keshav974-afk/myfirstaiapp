@@ -57,18 +57,18 @@ export default function ChatScreen() {
   const inputHeight = useSharedValue(50);
   const keyboardVisible = useSharedValue(0);
 
-  // Add keyboard event listeners
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
-        keyboardVisible.value = withTiming(1);
+        keyboardVisible.value = withTiming(1, { duration: 300 });
+        setTimeout(() => scrollToBottom(), 100);
       }
     );
     const keyboardDidHideListener = Keyboard.addListener(
       'keyboardDidHide',
       () => {
-        keyboardVisible.value = withTiming(0);
+        keyboardVisible.value = withTiming(0, { duration: 300 });
       }
     );
 
@@ -78,17 +78,37 @@ export default function ChatScreen() {
     };
   }, []);
 
-  const animatedInputStyle = useAnimatedStyle(() => {
-    return {
-      height: interpolate(keyboardVisible.value, [0, 1], [50, 100]),
-      minHeight: 50,
-      maxHeight: 100,
-    };
-  });
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const handleSendMessage = async () => {
+    if (message.trim() === '' || isLoading) return;
+    await sendMessage(message);
+    setMessage('');
+    inputHeight.value = withTiming(50);
+    setTimeout(() => scrollToBottom(), 100);
+  };
+
+  useEffect(() => {
+    if (currentChat?.messages?.length > 0) {
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  }, [currentChat?.messages]);
 
   const handleChangeText = (text: string) => {
     setMessage(text);
-    inputHeight.value = withTiming(Math.min(100, 50 + text.length * 0.5));
+    inputHeight.value = withTiming(Math.min(100, Math.max(50, text.split('\n').length * 24)));
+  };
+
+  const handleNewChat = () => {
+    createNewChat();
+    setSidebarVisible(false);
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    selectChat(chatId);
+    setSidebarVisible(false);
   };
 
   const handleUpload = async (file: any) => {
@@ -108,60 +128,223 @@ export default function ChatScreen() {
     setMessage(text);
   };
 
-  const handleSendMessage = async () => {
-    if (message.trim() === '' || isLoading) return;
-    await sendMessage(message);
-    setMessage('');
-    inputHeight.value = withTiming(50);
-  };
+  const animatedInputStyle = useAnimatedStyle(() => {
+    return {
+      height: inputHeight.value,
+    };
+  });
+
+  const animatedScrollViewStyle = useAnimatedStyle(() => {
+    const paddingBottom = interpolate(
+      keyboardVisible.value,
+      [0, 1],
+      [20, 80]
+    );
+    
+    return {
+      paddingBottom,
+    };
+  });
+
+  const isMobile = width < 768;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={90}
-        style={styles.inputContainer}
-      >
-        <Animated.View 
-          style={[
-            styles.inputWrapper,
-            { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground },
-            animatedInputStyle
-          ]}
-        >
-          <View style={styles.inputActions}>
-            <UploadButton onUpload={handleUpload} />
-            <VoiceButton onSpeechResult={handleSpeechResult} />
-          </View>
-
-          <TextInput
-            style={[
-              styles.input,
+      <View style={[
+        styles.header,
+        { borderBottomColor: Colors[colorScheme ?? 'light'].border }
+      ]}>
+        <View style={styles.headerLeft}>
+          {isMobile && (
+            <Pressable
+              style={styles.menuButton}
+              onPress={() => setSidebarVisible(!sidebarVisible)}
+            >
+              <Menu size={24} color={Colors[colorScheme ?? 'light'].text} />
+            </Pressable>
+          )}
+          <View style={styles.headerTitleContainer}>
+            <Image 
+              source={{ uri: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg' }}
+              style={styles.logo}
+            />
+            <Text style={[
+              styles.title,
               { color: Colors[colorScheme ?? 'light'].text }
-            ]}
-            placeholder="Ask Keshav anything..."
-            placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-            value={message}
-            onChangeText={handleChangeText}
-            multiline
-            maxLength={1000}
-          />
+            ]}>
+              Keshav AI
+            </Text>
+          </View>
+        </View>
+        <ModelSelector />
+      </View>
 
-          <Pressable
+      <View style={styles.contentContainer}>
+        {(!isMobile || sidebarVisible) && (
+          <Animated.View
+            entering={isMobile ? SlideInLeft : FadeIn}
+            exiting={isMobile ? SlideOutLeft : FadeOut}
             style={[
-              styles.sendButton,
+              styles.sidebar,
               {
-                backgroundColor: Colors[colorScheme ?? 'light'].tint,
-                opacity: message.trim() ? 1 : 0.5
-              }
+                backgroundColor: Colors[colorScheme ?? 'light'].sidebarBackground,
+                borderRightColor: Colors[colorScheme ?? 'light'].border,
+              },
+              isMobile && styles.mobileSidebar
             ]}
-            onPress={handleSendMessage}
-            disabled={message.trim() === '' || isLoading}
           >
-            <Send size={20} color="#FFFFFF" />
-          </Pressable>
-        </Animated.View>
-      </KeyboardAvoidingView>
+            <Pressable
+              style={[
+                styles.newChatButton,
+                { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+              ]}
+              onPress={handleNewChat}
+            >
+              <Plus size={20} color="#FFFFFF" />
+              <Text style={styles.newChatText}>New Chat</Text>
+            </Pressable>
+
+            <ChatList 
+              chats={chats}
+              activeChat={activeChat}
+              onSelectChat={handleSelectChat}
+              onDeleteChat={deleteChat}
+            />
+
+            {chats.length > 0 && (
+              <Pressable
+                style={[
+                  styles.clearHistoryButton,
+                  { backgroundColor: Colors[colorScheme ?? 'light'].dangerBackground }
+                ]}
+                onPress={clearChatHistory}
+              >
+                <Trash2 size={16} color={Colors[colorScheme ?? 'light'].danger} />
+                <Text style={[
+                  styles.clearHistoryText,
+                  { color: Colors[colorScheme ?? 'light'].danger }
+                ]}>
+                  Clear History
+                </Text>
+              </Pressable>
+            )}
+          </Animated.View>
+        )}
+
+        <View style={[
+          styles.mainContent,
+          isMobile && sidebarVisible && styles.blurredContent
+        ]}>
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>
+                Error: {error}. Please check your API key in settings.
+              </Text>
+            </View>
+          ) : null}
+
+          <Animated.ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.scrollViewContent,
+              animatedScrollViewStyle
+            ]}
+            keyboardShouldPersistTaps="handled"
+          >
+            {!currentChat?.messages?.length ? (
+              <View style={styles.emptyState}>
+                <Image 
+                  source={{ uri: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg' }}
+                  style={styles.welcomeImage}
+                />
+                <Text style={[
+                  styles.emptyStateTitle,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}>
+                  Welcome to Keshav AI
+                </Text>
+                <Text style={[
+                  styles.emptyStateText,
+                  { color: Colors[colorScheme ?? 'light'].textSecondary }
+                ]}>
+                  Your personal AI assistant powered by advanced language models
+                </Text>
+              </View>
+            ) : (
+              currentChat.messages.map((chat, index) => (
+                <ChatMessage
+                  key={index}
+                  message={chat.content}
+                  isUser={chat.role === 'user'}
+                  animate={index === currentChat.messages.length - 1}
+                />
+              ))
+            )}
+            
+            {isLoading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator 
+                  size="small" 
+                  color={Colors[colorScheme ?? 'light'].tint} 
+                />
+                <Text style={[
+                  styles.loadingText,
+                  { color: Colors[colorScheme ?? 'light'].textSecondary }
+                ]}>
+                  Keshav is thinking...
+                </Text>
+              </View>
+            )}
+          </Animated.ScrollView>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            style={styles.keyboardAvoidingView}
+          >
+            <Animated.View 
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground },
+                animatedInputStyle
+              ]}
+            >
+              <View style={styles.inputActions}>
+                <UploadButton onUpload={handleUpload} />
+                <VoiceButton onSpeechResult={handleSpeechResult} />
+              </View>
+
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}
+                placeholder="Ask Keshav anything..."
+                placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+                value={message}
+                onChangeText={handleChangeText}
+                multiline
+                maxLength={1000}
+              />
+
+              <Pressable
+                style={[
+                  styles.sendButton,
+                  {
+                    backgroundColor: Colors[colorScheme ?? 'light'].tint,
+                    opacity: message.trim() ? 1 : 0.5
+                  }
+                ]}
+                onPress={handleSendMessage}
+                disabled={message.trim() === '' || isLoading}
+              >
+                <Send size={20} color="#FFFFFF" />
+              </Pressable>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -170,7 +353,121 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  inputContainer: {
+  contentContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  menuButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+  },
+  sidebar: {
+    width: 280,
+    borderRightWidth: 1,
+    padding: 16,
+  },
+  mobileSidebar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+  },
+  newChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  newChatText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  clearHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  clearHistoryText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  },
+  mainContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  blurredContent: {
+    opacity: 0.3,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  welcomeImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    textAlign: 'center',
+    maxWidth: 400,
+    lineHeight: 24,
+  },
+  keyboardAvoidingView: {
     width: '100%',
   },
   inputWrapper: {
@@ -179,11 +476,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   input: {
     flex: 1,
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     paddingHorizontal: 12,
   },
   inputActions: {
@@ -199,4 +497,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+  },
+  errorContainer: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+    margin: 16,
+  },
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  }
 });
