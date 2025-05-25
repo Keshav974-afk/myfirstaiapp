@@ -131,124 +131,139 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
   const formattedMessage = formatMessage(message);
 
   return (
-    <Animated.View 
-      style={[
-        styles.container,
-        isUser ? styles.userContainer : styles.aiContainer,
-        animate ? { entering: FadeInDown.duration(300).springify() } : {},
-        animatedStyle
-      ]}
-    >
-      <Pressable 
-        style={styles.messageWrapper}
-        onLongPress={() => setShowActions(true)}
-        onPress={() => setShowActions(false)}
+    <View style={[
+      styles.wrapper,
+      isUser ? styles.userWrapper : styles.aiWrapper
+    ]}>
+      <Animated.View 
+        style={[
+          styles.container,
+          isUser ? styles.userContainer : styles.aiContainer,
+          animate ? { entering: FadeInDown.duration(300).springify() } : {},
+          animatedStyle
+        ]}
       >
-        <View style={[
-          styles.bubble,
-          isUser 
-            ? { backgroundColor: Colors[colorScheme ?? 'light'].userBubble } 
-            : { backgroundColor: Colors[colorScheme ?? 'light'].aiBubble }
-        ]}>
-          <View>
-            {formattedMessage ? (
-              <Text style={[
-                styles.messageText,
-                isUser 
-                  ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
-                  : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
-              ]}>
-                {formattedMessage}
-              </Text>
-            ) : null}
-            
-            {imageUrl && (
-              <ImagePreview imageUrl={imageUrl} />
-            )}
-          </View>
-        </View>
-      </Pressable>
-      
-      {showActions && (
-        <Animated.View 
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
-          style={[
-            styles.actionButtons,
-            { backgroundColor: Colors[colorScheme ?? 'light'].background }
-          ]}
+        <Pressable 
+          style={styles.messageWrapper}
+          onLongPress={() => setShowActions(true)}
+          onPress={() => setShowActions(false)}
         >
-          <Pressable 
-            style={styles.actionButton} 
-            onPress={handleCopy}
+          <View style={[
+            styles.bubble,
+            isUser 
+              ? { backgroundColor: Colors[colorScheme ?? 'light'].userBubble } 
+              : { backgroundColor: Colors[colorScheme ?? 'light'].aiBubble }
+          ]}>
+            <View>
+              {formattedMessage ? (
+                <Text style={[
+                  styles.messageText,
+                  isUser 
+                    ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
+                    : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
+                ]}>
+                  {formattedMessage}
+                </Text>
+              ) : null}
+              
+              {imageUrl && (
+                <ImagePreview imageUrl={imageUrl} />
+              )}
+            </View>
+          </View>
+        </Pressable>
+        
+        {showActions && (
+          <Animated.View 
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[
+              styles.actionButtons,
+              { backgroundColor: Colors[colorScheme ?? 'light'].background }
+            ]}
           >
-            {copied ? (
-              <CheckCircle2 size={16} color="#10B981" />
-            ) : (
-              <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            )}
-          </Pressable>
+            <Pressable 
+              style={styles.actionButton} 
+              onPress={handleCopy}
+            >
+              {copied ? (
+                <CheckCircle2 size={16} color="#10B981" />
+              ) : (
+                <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              )}
+            </Pressable>
 
-          <Pressable 
-            style={styles.actionButton}
-            onPress={handleSpeak}
-          >
-            <Volume2 
-              size={16} 
-              color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
-            />
-          </Pressable>
-
-          <Pressable 
-            style={styles.actionButton}
-            onPress={handleShare}
-          >
-            <Share2 
-              size={16} 
-              color={Colors[colorScheme ?? 'light'].textSecondary} 
-            />
-          </Pressable>
-
-          <Pressable 
-            style={styles.actionButton}
-            onPress={handleBookmark}
-          >
-            <Bookmark 
-              size={16}
-              color={isBookmarked ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary}
-              fill={isBookmarked ? Colors[colorScheme ?? 'light'].tint : 'transparent'}
-            />
-          </Pressable>
-
-          {isUser && onEdit && (
             <Pressable 
               style={styles.actionButton}
-              onPress={() => {
-                setShowActions(false);
-                onEdit(message);
-              }}
+              onPress={handleSpeak}
             >
-              <Edit3 
+              <Volume2 
+                size={16} 
+                color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
+              />
+            </Pressable>
+
+            <Pressable 
+              style={styles.actionButton}
+              onPress={handleShare}
+            >
+              <Share2 
                 size={16} 
                 color={Colors[colorScheme ?? 'light'].textSecondary} 
               />
             </Pressable>
-          )}
-        </Animated.View>
-      )}
-    </Animated.View>
+
+            <Pressable 
+              style={styles.actionButton}
+              onPress={handleBookmark}
+            >
+              <Bookmark 
+                size={16}
+                color={isBookmarked ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary}
+                fill={isBookmarked ? Colors[colorScheme ?? 'light'].tint : 'transparent'}
+              />
+            </Pressable>
+
+            {isUser && onEdit && (
+              <Pressable 
+                style={styles.actionButton}
+                onPress={() => {
+                  setShowActions(false);
+                  onEdit(message);
+                }}
+              >
+                <Edit3 
+                  size={16} 
+                  color={Colors[colorScheme ?? 'light'].textSecondary} 
+                />
+              </Pressable>
+            )}
+          </Animated.View>
+        )}
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    marginBottom: 24,
+    position: 'relative',
+    width: '100%',
+  },
+  userWrapper: {
+    alignItems: 'flex-end',
+  },
+  aiWrapper: {
+    alignItems: 'flex-start',
+  },
   container: {
-    marginBottom: 24, // Increased to prevent overlap
     maxWidth: '85%',
     position: 'relative',
   },
   messageWrapper: {
     position: 'relative',
-    zIndex: 1, // Ensure message stays above other elements
+    zIndex: 1,
   },
   userContainer: {
     alignSelf: 'flex-end',
@@ -260,8 +275,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    elevation: 2, // Add elevation for Android
-    shadowColor: '#000', // Add shadow for iOS
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -276,24 +291,27 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     position: 'absolute',
-    top: '100%', // Position below the message
-    right: 8,
+    top: '100%',
+    left: '50%',
+    transform: [{ translateX: -90 }], // Half of the total width (180/2)
     flexDirection: 'row',
     gap: 8,
-    padding: 6,
-    borderRadius: 20,
-    marginTop: 8, // Add space between message and actions
-    zIndex: 2, // Ensure actions stay above messages
+    padding: 8,
+    borderRadius: 24,
+    marginTop: 8,
+    zIndex: 100,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3.84,
     elevation: 5,
+    width: 180, // Fixed width for better positioning
+    justifyContent: 'center',
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
