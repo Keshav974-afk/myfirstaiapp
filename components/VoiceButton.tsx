@@ -6,14 +6,6 @@ import Colors from '@/constants/Colors';
 
 // Dynamic import for Voice
 let Voice: any = null;
-if (Platform.OS !== 'web') {
-  // Using import() for dynamic loading
-  import('react-native-voice').then(module => {
-    Voice = module.default;
-  }).catch(error => {
-    console.error('Error loading Voice module:', error);
-  });
-}
 
 interface VoiceButtonProps {
   onSpeechResult?: (text: string) => void;
@@ -39,37 +31,44 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   useEffect(() => {
     if (Platform.OS !== 'web') {
       // Initialize Voice when component mounts
-      import('react-native-voice').then(module => {
-        Voice = module.default;
-        setIsVoiceLoaded(true);
+      const loadVoice = async () => {
+        try {
+          const VoiceModule = await import('react-native-voice');
+          Voice = VoiceModule.default;
+          setIsVoiceLoaded(true);
 
-        Voice.onSpeechResults = (e: SpeechResultsEvent) => {
-          if (e.value && e.value[0] && onSpeechResult) {
-            onSpeechResult(e.value[0]);
-          }
-          setIsListening(false);
-        };
-
-        Voice.onSpeechError = (e: SpeechErrorEvent) => {
-          let errorMessage = 'Speech recognition error. Try again.';
-          if (e.error?.message) {
-            if (e.error.message.includes('network')) {
-              errorMessage = 'Network error. Check your connection.';
-            } else if (e.error.message.includes('permission')) {
-              errorMessage = 'Microphone access denied.';
+          Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+            if (e.value && e.value[0] && onSpeechResult) {
+              onSpeechResult(e.value[0]);
             }
-          }
-          showError(errorMessage);
-          setIsListening(false);
-        };
+            setIsListening(false);
+          };
 
-        return () => {
+          Voice.onSpeechError = (e: SpeechErrorEvent) => {
+            let errorMessage = 'Speech recognition error. Try again.';
+            if (e.error?.message) {
+              if (e.error.message.includes('network')) {
+                errorMessage = 'Network error. Check your connection.';
+              } else if (e.error.message.includes('permission')) {
+                errorMessage = 'Microphone access denied.';
+              }
+            }
+            showError(errorMessage);
+            setIsListening(false);
+          };
+        } catch (error) {
+          console.error('Error loading Voice module:', error);
+          setIsVoiceLoaded(false);
+        }
+      };
+
+      loadVoice();
+
+      return () => {
+        if (Voice) {
           Voice.destroy().then(Voice.removeAllListeners);
-        };
-      }).catch(error => {
-        console.error('Error initializing Voice:', error);
-        setIsVoiceLoaded(false);
-      });
+        }
+      };
     }
   }, [onSpeechResult]);
 
