@@ -1,7 +1,7 @@
 import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { Copy, CircleCheck as CheckCircle2, Volume2, Share2, Bookmark, CreditCard as Edit3 } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
 import * as Sharing from 'expo-sharing';
@@ -68,24 +68,28 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
   const [showActions, setShowActions] = useState(false);
   const scale = useSharedValue(1);
 
-  // Add event listener for clicks outside the message
+  const handleClickOutside = useCallback((event: any) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.message-actions') && !target.closest('.message-bubble')) {
+      setShowActions(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!showActions) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.message-actions') && !target.closest('.message-bubble')) {
-        setShowActions(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showActions]);
+    if (Platform.OS === 'web' && showActions) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }
+  }, [showActions, handleClickOutside]);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(message);
     setCopied(true);
+    setShowActions(false);
     
     scale.value = withSequence(
       withTiming(1.05, { duration: 100 }),
@@ -104,8 +108,14 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
     } else {
       setIsSpeaking(true);
       await Speech.speak(formatMessage(message), {
-        onDone: () => setIsSpeaking(false),
-        onError: () => setIsSpeaking(false),
+        onDone: () => {
+          setIsSpeaking(false);
+          setShowActions(false);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setShowActions(false);
+        },
       });
     }
   };
@@ -131,11 +141,20 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
         console.log('Error sharing:', error);
       }
     }
+    setShowActions(false);
   };
 
   const handleBookmark = () => {
     setIsBookmarked(!isBookmarked);
+    setShowActions(false);
     // TODO: Implement bookmark storage
+  };
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(message);
+      setShowActions(false);
+    }
   };
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -196,7 +215,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
             exiting={SlideOutDown.duration(150)}
             style={[
               styles.actionButtonsContainer,
-              { backgroundColor: Colors[colorScheme ?? 'light'].background }
+              { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
             ]}
             className="message-actions"
           >
@@ -255,10 +274,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
               {isUser && onEdit && (
                 <Pressable 
                   style={styles.actionButton}
-                  onPress={() => {
-                    setShowActions(false);
-                    onEdit(message);
-                  }}
+                  onPress={handleEdit}
                 >
                   <Edit3 
                     size={16} 
@@ -332,6 +348,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 3.84,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
   },
   actionButtons: {
     flexDirection: 'row',
