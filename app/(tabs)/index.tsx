@@ -9,13 +9,12 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ActivityIndicator,
-  Keyboard,
   useWindowDimensions,
   Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { Send, Menu, Plus, Trash2 } from 'lucide-react-native';
+import { Send, Menu, Plus, Trash2, Wand2, Globe2, Brain, Lightbulb, Mic, Settings2 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ModelSelector } from '@/components/ModelSelector';
@@ -35,12 +34,20 @@ import Animated, {
   SlideOutLeft
 } from 'react-native-reanimated';
 
+const TOOLS = [
+  { icon: Wand2, title: 'Create an image', description: 'Generate images from text' },
+  { icon: Globe2, title: 'Search the web', description: 'Get real-time information' },
+  { icon: Brain, title: 'Run deep research', description: 'In-depth analysis' },
+  { icon: Lightbulb, title: 'Think for longer', description: 'Complex problem solving' },
+];
+
 export default function ChatScreen() {
   const colorScheme = useColorScheme();
   const { width } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   const [message, setMessage] = useState('');
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [showTools, setShowTools] = useState(false);
   const { 
     sendMessage, 
     chats, 
@@ -55,43 +62,16 @@ export default function ChatScreen() {
   } = useChatService();
   const { selectedModel } = useAppSettings();
   const inputHeight = useSharedValue(50);
-  const keyboardVisible = useSharedValue(0);
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        keyboardVisible.value = withTiming(1, { duration: 300 });
-        setTimeout(() => scrollToBottom(), 100);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        keyboardVisible.value = withTiming(0, { duration: 300 });
-      }
-    );
-
-    return () => {
-      keyboardDidHideListener.remove();
-      keyboardDidShowListener.remove();
-    };
-  }, []);
 
   const scrollToBottom = () => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
   const handleSendMessage = async () => {
-    if (message.trim() === '' || isLoading) return;
-    
-    // Check if the selected model is available before sending
-    if (!selectedModel) {
-      return;
-    }
-    
+    if (message.trim() === '' || isLoading || !selectedModel) return;
     await sendMessage(message);
     setMessage('');
+    setShowTools(false);
     inputHeight.value = withTiming(50);
     setTimeout(() => scrollToBottom(), 100);
   };
@@ -110,47 +90,18 @@ export default function ChatScreen() {
   const handleNewChat = () => {
     createNewChat();
     setSidebarVisible(false);
+    setShowTools(true);
   };
 
   const handleSelectChat = (chatId: string) => {
     selectChat(chatId);
     setSidebarVisible(false);
+    setShowTools(false);
   };
 
-  const handleUpload = async (file: any) => {
-    if (!file) return;
-
-    let prompt = '';
-    if (file.type === 'image') {
-      prompt = `[Analyzing image...]\n\nI'm sharing an image with you. Please analyze this image and describe what you see in detail.`;
-    } else {
-      prompt = `[Analyzing document: ${file.name}]\n\nPlease help me understand or analyze this document.`;
-    }
-
-    await sendMessage(prompt, file);
-  };
-
-  const handleSpeechResult = (text: string) => {
-    setMessage(text);
-  };
-
-  const animatedInputStyle = useAnimatedStyle(() => {
-    return {
-      height: inputHeight.value,
-    };
-  });
-
-  const animatedScrollViewStyle = useAnimatedStyle(() => {
-    const paddingBottom = interpolate(
-      keyboardVisible.value,
-      [0, 1],
-      [20, 80]
-    );
-    
-    return {
-      paddingBottom,
-    };
-  });
+  const animatedInputStyle = useAnimatedStyle(() => ({
+    height: inputHeight.value,
+  }));
 
   const isMobile = width < 768;
 
@@ -244,39 +195,72 @@ export default function ChatScreen() {
           {error ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>
-                Error: {error}. Please check your API key in settings.
+                Error: {error}
               </Text>
             </View>
           ) : null}
 
-          <Animated.ScrollView
+          <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
-            contentContainerStyle={[
-              styles.scrollViewContent,
-              animatedScrollViewStyle
-            ]}
+            contentContainerStyle={styles.scrollViewContent}
             keyboardShouldPersistTaps="handled"
           >
             {!currentChat?.messages?.length ? (
-              <View style={styles.emptyState}>
-                <Image 
-                  source={{ uri: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg' }}
-                  style={styles.welcomeImage}
-                />
-                <Text style={[
-                  styles.emptyStateTitle,
-                  { color: Colors[colorScheme ?? 'light'].text }
-                ]}>
-                  Welcome to Keshav AI
-                </Text>
-                <Text style={[
-                  styles.emptyStateText,
-                  { color: Colors[colorScheme ?? 'light'].textSecondary }
-                ]}>
-                  Your personal AI assistant powered by advanced language models
-                </Text>
-              </View>
+              showTools ? (
+                <View style={styles.toolsContainer}>
+                  <Text style={[
+                    styles.toolsTitle,
+                    { color: Colors[colorScheme ?? 'light'].text }
+                  ]}>
+                    Tools
+                  </Text>
+                  <View style={styles.toolsGrid}>
+                    {TOOLS.map((tool, index) => (
+                      <Pressable
+                        key={index}
+                        style={[
+                          styles.toolCard,
+                          { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
+                        ]}
+                      >
+                        <tool.icon size={24} color={Colors[colorScheme ?? 'light'].tint} />
+                        <Text style={[
+                          styles.toolTitle,
+                          { color: Colors[colorScheme ?? 'light'].text }
+                        ]}>
+                          {tool.title}
+                        </Text>
+                        <Text style={[
+                          styles.toolDescription,
+                          { color: Colors[colorScheme ?? 'light'].textSecondary }
+                        ]}>
+                          {tool.description}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Image 
+                    source={{ uri: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg' }}
+                    style={styles.welcomeImage}
+                  />
+                  <Text style={[
+                    styles.emptyStateTitle,
+                    { color: Colors[colorScheme ?? 'light'].text }
+                  ]}>
+                    Welcome to Keshav AI
+                  </Text>
+                  <Text style={[
+                    styles.emptyStateText,
+                    { color: Colors[colorScheme ?? 'light'].textSecondary }
+                  ]}>
+                    Your personal AI assistant powered by advanced language models
+                  </Text>
+                </View>
+              )
             ) : (
               currentChat.messages.map((chat, index) => (
                 <ChatMessage
@@ -302,7 +286,7 @@ export default function ChatScreen() {
                 </Text>
               </View>
             )}
-          </Animated.ScrollView>
+          </ScrollView>
 
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -317,8 +301,15 @@ export default function ChatScreen() {
               ]}
             >
               <View style={styles.inputActions}>
-                <UploadButton onUpload={handleUpload} />
-                <VoiceButton onSpeechResult={handleSpeechResult} />
+                <Pressable
+                  style={styles.plusButton}
+                  onPress={() => setShowTools(!showTools)}
+                >
+                  <Plus 
+                    size={24} 
+                    color={Colors[colorScheme ?? 'light'].textSecondary} 
+                  />
+                </Pressable>
               </View>
 
               <TextInput
@@ -326,7 +317,7 @@ export default function ChatScreen() {
                   styles.input,
                   { color: Colors[colorScheme ?? 'light'].text }
                 ]}
-                placeholder="Ask Keshav anything..."
+                placeholder="Message Keshav..."
                 placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
                 value={message}
                 onChangeText={handleChangeText}
@@ -334,19 +325,22 @@ export default function ChatScreen() {
                 maxLength={1000}
               />
 
-              <Pressable
-                style={[
-                  styles.sendButton,
-                  {
-                    backgroundColor: Colors[colorScheme ?? 'light'].tint,
-                    opacity: message.trim() && !isLoading && selectedModel ? 1 : 0.5
-                  }
-                ]}
-                onPress={handleSendMessage}
-                disabled={message.trim() === '' || isLoading || !selectedModel}
-              >
-                <Send size={20} color="#FFFFFF" />
-              </Pressable>
+              <View style={styles.inputActions}>
+                <VoiceButton onSpeechResult={handleChangeText} />
+                <Pressable
+                  style={[
+                    styles.sendButton,
+                    {
+                      backgroundColor: Colors[colorScheme ?? 'light'].tint,
+                      opacity: message.trim() && !isLoading && selectedModel ? 1 : 0.5
+                    }
+                  ]}
+                  onPress={handleSendMessage}
+                  disabled={message.trim() === '' || isLoading || !selectedModel}
+                >
+                  <Send size={20} color="#FFFFFF" />
+                </Pressable>
+              </View>
             </Animated.View>
           </KeyboardAvoidingView>
         </View>
@@ -447,6 +441,37 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 20,
+  },
+  toolsContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  toolsTitle: {
+    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 24,
+  },
+  toolsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  toolCard: {
+    width: '48%',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  toolTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  toolDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
   emptyState: {
     flex: 1,
@@ -489,11 +514,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     paddingHorizontal: 12,
+    maxHeight: 100,
   },
   inputActions: {
     flexDirection: 'row',
     gap: 8,
-    paddingRight: 8,
+    alignItems: 'center',
+  },
+  plusButton: {
+    padding: 4,
   },
   sendButton: {
     width: 40,
@@ -501,7 +530,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
   loadingContainer: {
     flexDirection: 'row',

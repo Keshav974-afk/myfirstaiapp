@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { MessageSquare, Settings } from 'lucide-react-native';
+import { MessageSquare, Settings, Library, Search, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 
 export default function TabLayout() {
@@ -28,6 +28,24 @@ export default function TabLayout() {
           title: 'Chat',
           tabBarIcon: ({ color, size }) => (
             <MessageSquare size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, size }) => (
+            <Search size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: 'Library',
+          tabBarIcon: ({ color, size }) => (
+            <Library size={size} color={color} />
           ),
         }}
       />
