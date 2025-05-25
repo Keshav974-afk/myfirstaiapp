@@ -178,66 +178,68 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
             style={[
-              styles.actionButtons,
+              styles.actionButtonsContainer,
               { backgroundColor: Colors[colorScheme ?? 'light'].background }
             ]}
           >
-            <Pressable 
-              style={styles.actionButton} 
-              onPress={handleCopy}
-            >
-              {copied ? (
-                <CheckCircle2 size={16} color="#10B981" />
-              ) : (
-                <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              )}
-            </Pressable>
+            <View style={styles.actionButtons}>
+              <Pressable 
+                style={styles.actionButton} 
+                onPress={handleCopy}
+              >
+                {copied ? (
+                  <CheckCircle2 size={16} color="#10B981" />
+                ) : (
+                  <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                )}
+              </Pressable>
 
-            <Pressable 
-              style={styles.actionButton}
-              onPress={handleSpeak}
-            >
-              <Volume2 
-                size={16} 
-                color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
-              />
-            </Pressable>
-
-            <Pressable 
-              style={styles.actionButton}
-              onPress={handleShare}
-            >
-              <Share2 
-                size={16} 
-                color={Colors[colorScheme ?? 'light'].textSecondary} 
-              />
-            </Pressable>
-
-            <Pressable 
-              style={styles.actionButton}
-              onPress={handleBookmark}
-            >
-              <Bookmark 
-                size={16}
-                color={isBookmarked ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary}
-                fill={isBookmarked ? Colors[colorScheme ?? 'light'].tint : 'transparent'}
-              />
-            </Pressable>
-
-            {isUser && onEdit && (
               <Pressable 
                 style={styles.actionButton}
-                onPress={() => {
-                  setShowActions(false);
-                  onEdit(message);
-                }}
+                onPress={handleSpeak}
               >
-                <Edit3 
+                <Volume2 
+                  size={16} 
+                  color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
+                />
+              </Pressable>
+
+              <Pressable 
+                style={styles.actionButton}
+                onPress={handleShare}
+              >
+                <Share2 
                   size={16} 
                   color={Colors[colorScheme ?? 'light'].textSecondary} 
                 />
               </Pressable>
-            )}
+
+              <Pressable 
+                style={styles.actionButton}
+                onPress={handleBookmark}
+              >
+                <Bookmark 
+                  size={16}
+                  color={isBookmarked ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary}
+                  fill={isBookmarked ? Colors[colorScheme ?? 'light'].tint : 'transparent'}
+                />
+              </Pressable>
+
+              {isUser && onEdit && (
+                <Pressable 
+                  style={styles.actionButton}
+                  onPress={() => {
+                    setShowActions(false);
+                    onEdit(message);
+                  }}
+                >
+                  <Edit3 
+                    size={16} 
+                    color={Colors[colorScheme ?? 'light'].textSecondary} 
+                  />
+                </Pressable>
+              )}
+            </View>
           </Animated.View>
         )}
       </Animated.View>
@@ -247,7 +249,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 24,
+    marginBottom: 32, // Increased to accommodate action buttons
     position: 'relative',
     width: '100%',
   },
@@ -289,22 +291,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     lineHeight: 24,
   },
-  actionButtons: {
+  actionButtonsContainer: {
     position: 'absolute',
     top: '100%',
     left: '50%',
-    transform: [{ translateX: -90 }], // Half of the total width (180/2)
-    flexDirection: 'row',
-    gap: 8,
-    padding: 8,
-    borderRadius: 24,
+    transform: [{ translateX: -90 }], // Half of the total width
     marginTop: 8,
-    zIndex: 100,
+    borderRadius: 24,
+    zIndex: 1000, // Ensure it stays above other messages
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 8,
     width: 180, // Fixed width for better positioning
     justifyContent: 'center',
   },
