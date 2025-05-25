@@ -1,15 +1,18 @@
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { Copy, CircleCheck as CheckCircle2, Volume2 } from 'lucide-react-native';
+import { Copy, CircleCheck as CheckCircle2, Volume2, Share2, Bookmark, Edit3 } from 'lucide-react-native';
 import { useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
+import * as Sharing from 'expo-sharing';
 import Animated, { 
   FadeInDown, 
   useAnimatedStyle, 
   useSharedValue, 
   withSequence, 
-  withTiming 
+  withTiming,
+  FadeIn,
+  FadeOut
 } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { ImagePreview } from './ImagePreview';
@@ -18,6 +21,7 @@ interface ChatMessageProps {
   message: string;
   isUser: boolean;
   animate?: boolean;
+  onEdit?: (message: string) => void;
 }
 
 function extractImageUrl(text: string): string | null {
@@ -51,10 +55,12 @@ function formatMessage(text: string): string {
     .trim();
 }
 
-export function ChatMessage({ message, isUser, animate = false }: ChatMessageProps) {
+export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMessageProps) {
   const colorScheme = useColorScheme();
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const scale = useSharedValue(1);
 
   const handleCopy = async () => {
@@ -84,6 +90,25 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
     }
   };
 
+  const handleShare = async () => {
+    if (Platform.OS === 'web') {
+      try {
+        await navigator.share({
+          text: formatMessage(message),
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(formatMessage(message));
+    }
+  };
+
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    // TODO: Implement bookmark storage
+  };
+
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ scale: scale.value }],
@@ -102,37 +127,46 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
         animatedStyle
       ]}
     >
-      <View style={[
-        styles.bubble,
-        isUser 
-          ? { backgroundColor: Colors[colorScheme ?? 'light'].userBubble } 
-          : { backgroundColor: Colors[colorScheme ?? 'light'].aiBubble }
-      ]}>
-        <View>
-          {formattedMessage ? (
-            <Text style={[
-              styles.messageText,
-              isUser 
-                ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
-                : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
-            ]}>
-              {formattedMessage}
-            </Text>
-          ) : null}
-          
-          {imageUrl && (
-            <ImagePreview imageUrl={imageUrl} />
-          )}
+      <Pressable 
+        style={styles.messageWrapper}
+        onLongPress={() => setShowActions(true)}
+      >
+        <View style={[
+          styles.bubble,
+          isUser 
+            ? { backgroundColor: Colors[colorScheme ?? 'light'].userBubble } 
+            : { backgroundColor: Colors[colorScheme ?? 'light'].aiBubble }
+        ]}>
+          <View>
+            {formattedMessage ? (
+              <Text style={[
+                styles.messageText,
+                isUser 
+                  ? { color: Colors[colorScheme ?? 'light'].userBubbleText } 
+                  : { color: Colors[colorScheme ?? 'light'].aiBubbleText }
+              ]}>
+                {formattedMessage}
+              </Text>
+            ) : null}
+            
+            {imageUrl && (
+              <ImagePreview imageUrl={imageUrl} />
+            )}
+          </View>
         </View>
-      </View>
+      </Pressable>
       
-      {!isUser && (
-        <View style={styles.actionButtons}>
+      {showActions && (
+        <Animated.View 
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+          style={[
+            styles.actionButtons,
+            { backgroundColor: Colors[colorScheme ?? 'light'].background }
+          ]}
+        >
           <Pressable 
-            style={[
-              styles.actionButton,
-              { backgroundColor: Colors[colorScheme ?? 'light'].background }
-            ]} 
+            style={styles.actionButton} 
             onPress={handleCopy}
           >
             {copied ? (
@@ -143,10 +177,7 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
           </Pressable>
 
           <Pressable 
-            style={[
-              styles.actionButton,
-              { backgroundColor: Colors[colorScheme ?? 'light'].background }
-            ]} 
+            style={styles.actionButton}
             onPress={handleSpeak}
           >
             <Volume2 
@@ -154,7 +185,43 @@ export function ChatMessage({ message, isUser, animate = false }: ChatMessagePro
               color={isSpeaking ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary} 
             />
           </Pressable>
-        </View>
+
+          <Pressable 
+            style={styles.actionButton}
+            onPress={handleShare}
+          >
+            <Share2 
+              size={16} 
+              color={Colors[colorScheme ?? 'light'].textSecondary} 
+            />
+          </Pressable>
+
+          <Pressable 
+            style={styles.actionButton}
+            onPress={handleBookmark}
+          >
+            <Bookmark 
+              size={16}
+              color={isBookmarked ? Colors[colorScheme ?? 'light'].tint : Colors[colorScheme ?? 'light'].textSecondary}
+              fill={isBookmarked ? Colors[colorScheme ?? 'light'].tint : 'transparent'}
+            />
+          </Pressable>
+
+          {isUser && onEdit && (
+            <Pressable 
+              style={styles.actionButton}
+              onPress={() => {
+                setShowActions(false);
+                onEdit(message);
+              }}
+            >
+              <Edit3 
+                size={16} 
+                color={Colors[colorScheme ?? 'light'].textSecondary} 
+              />
+            </Pressable>
+          )}
+        </Animated.View>
       )}
     </Animated.View>
   );
@@ -164,6 +231,9 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 12,
     maxWidth: '85%',
+    position: 'relative',
+  },
+  messageWrapper: {
     position: 'relative',
   },
   userContainer: {
@@ -184,21 +254,23 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     position: 'absolute',
-    bottom: -8,
+    bottom: -36,
     right: 8,
     flexDirection: 'row',
     gap: 8,
+    padding: 6,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   actionButton: {
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
   },
 });
