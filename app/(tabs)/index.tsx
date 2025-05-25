@@ -15,11 +15,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { Send, Menu, Plus, Trash2 } from 'lucide-react-native';
+import { Send, Menu, Plus, Trash2, Search } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ModelSelector } from '@/components/ModelSelector';
 import { ChatList } from '@/components/ChatList';
+import { UploadButton } from '@/components/UploadButton';
+import { VoiceButton } from '@/components/VoiceButton';
 import { useChatService } from '@/hooks/useChatService';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import Animated, { 
@@ -32,6 +34,7 @@ import Animated, {
   SlideInLeft,
   SlideOutLeft
 } from 'react-native-reanimated';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function ChatScreen() {
   const colorScheme = useColorScheme();
@@ -39,6 +42,7 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [message, setMessage] = useState('');
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [webSearchResults, setWebSearchResults] = useState<any[]>([]);
   const { 
     sendMessage, 
     chats, 
@@ -87,6 +91,33 @@ export default function ChatScreen() {
     setMessage('');
     
     setTimeout(() => scrollToBottom(), 100);
+  };
+
+  const handleUpload = async (file: any) => {
+    // Handle file upload
+    const fileInfo = `[Uploaded ${file.type}: ${file.name}]`;
+    setMessage(prev => prev + '\n' + fileInfo);
+  };
+
+  const handleVoiceResult = (text: string) => {
+    setMessage(prev => prev + ' ' + text);
+  };
+
+  const handleWebSearch = async () => {
+    try {
+      // Implement web search functionality
+      const searchTerm = message.trim();
+      if (!searchTerm) return;
+
+      // This is a placeholder - implement actual web search API
+      const results = [
+        { title: 'Example Result 1', url: 'https://example.com/1' },
+        { title: 'Example Result 2', url: 'https://example.com/2' },
+      ];
+      setWebSearchResults(results);
+    } catch (error) {
+      console.error('Web search error:', error);
+    }
   };
 
   useEffect(() => {
@@ -281,6 +312,31 @@ export default function ChatScreen() {
                 </Text>
               </View>
             )}
+
+            {webSearchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                <Text style={[
+                  styles.searchResultsTitle,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}>
+                  Web Search Results
+                </Text>
+                {webSearchResults.map((result, index) => (
+                  <Pressable
+                    key={index}
+                    style={styles.searchResult}
+                    onPress={() => WebBrowser.openBrowserAsync(result.url)}
+                  >
+                    <Text style={[
+                      styles.searchResultText,
+                      { color: Colors[colorScheme ?? 'light'].tint }
+                    ]}>
+                      {result.title}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </Animated.ScrollView>
 
           <KeyboardAvoidingView
@@ -288,6 +344,12 @@ export default function ChatScreen() {
             keyboardVerticalOffset={90}
             style={styles.inputContainer}
           >
+            <UploadButton onUpload={handleUpload} />
+            <VoiceButton 
+              onSpeechResult={handleVoiceResult}
+              textToSpeak={currentChat?.messages[currentChat.messages.length - 1]?.content}
+            />
+            
             <Animated.View 
               style={[
                 styles.inputWrapper,
@@ -307,19 +369,30 @@ export default function ChatScreen() {
                 multiline
                 maxLength={1000}
               />
-              <Pressable
-                style={[
-                  styles.sendButton,
-                  {
-                    backgroundColor: Colors[colorScheme ?? 'light'].tint,
-                    opacity: message.trim() ? 1 : 0.5
-                  }
-                ]}
-                onPress={handleSendMessage}
-                disabled={message.trim() === '' || isLoading}
-              >
-                <Send size={20} color="#FFFFFF" />
-              </Pressable>
+              <View style={styles.inputButtons}>
+                <Pressable
+                  style={[
+                    styles.actionButton,
+                    { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+                  ]}
+                  onPress={handleWebSearch}
+                >
+                  <Search size={20} color="#FFFFFF" />
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: Colors[colorScheme ?? 'light'].tint,
+                      opacity: message.trim() ? 1 : 0.5
+                    }
+                  ]}
+                  onPress={handleSendMessage}
+                  disabled={message.trim() === '' || isLoading}
+                >
+                  <Send size={20} color="#FFFFFF" />
+                </Pressable>
+              </View>
             </Animated.View>
           </KeyboardAvoidingView>
         </View>
@@ -462,13 +535,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     maxHeight: 120,
   },
-  sendButton: {
+  inputButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -491,5 +567,23 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-  }
+  },
+  searchResults: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 12,
+  },
+  searchResultsTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 8,
+  },
+  searchResult: {
+    paddingVertical: 8,
+  },
+  searchResultText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+  },
 });
