@@ -91,16 +91,25 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
   };
 
   const handleShare = async () => {
+    const formattedText = formatMessage(message);
+    
     if (Platform.OS === 'web') {
       try {
         await navigator.share({
-          text: formatMessage(message),
+          text: formattedText,
         });
+      } catch (error) {
+        // Fallback for browsers that don't support Web Share API
+        await Clipboard.setStringAsync(formattedText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } else if (await Sharing.isAvailableAsync()) {
+      try {
+        await Sharing.shareAsync(formattedText);
       } catch (error) {
         console.log('Error sharing:', error);
       }
-    } else if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(formatMessage(message));
     }
   };
 
