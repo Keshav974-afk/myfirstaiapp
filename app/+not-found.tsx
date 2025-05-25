@@ -1,6 +1,6 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View, Image, Pressable } from 'react-native';
-import { Home } from 'lucide-react-native';
+import { Chrome as Home } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
 
