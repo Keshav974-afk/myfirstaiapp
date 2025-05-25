@@ -1,7 +1,7 @@
 import { StyleSheet, View, Text, TextInput, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { Search, Sparkles, Zap, Brain, Globe2 } from 'lucide-react-native';
+import { Search, Sparkles, Zap, Brain, Globe as Globe2 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 
 const CATEGORIES = [
