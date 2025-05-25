@@ -46,10 +46,6 @@ export function ModelSelector() {
     setSearchQuery('');
   };
 
-  const handleOpenModal = () => {
-    setModalVisible(true);
-  };
-
   const renderModelItem = ({ item }: { item: AIModel }) => {
     const isSelected = selectedModel?.id === item.id;
     
@@ -130,7 +126,7 @@ export function ModelSelector() {
               : Colors[colorScheme ?? 'light'].cardBackground,
           }
         ]}
-        onPress={handleOpenModal}
+        onPress={() => setModalVisible(true)}
         android_ripple={{
           color: Colors[colorScheme ?? 'light'].ripple,
           borderless: true,
