@@ -5,10 +5,19 @@ import { Image as ImageIcon, ExternalLink } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useChatService } from '@/hooks/useChatService';
 import { format } from 'date-fns';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function LibraryScreen() {
   const colorScheme = useColorScheme();
   const { generatedImages } = useChatService();
+
+  const handleViewImage = async (url: string) => {
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      await WebBrowser.openBrowserAsync(url);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -68,11 +77,7 @@ export default function LibraryScreen() {
                       styles.viewButton,
                       { backgroundColor: Colors[colorScheme ?? 'light'].tint }
                     ]}
-                    onPress={() => {
-                      if (Platform.OS === 'web') {
-                        window.open(image.url, '_blank');
-                      }
-                    }}
+                    onPress={() => handleViewImage(image.url)}
                   >
                     <ExternalLink size={16} color="#FFFFFF" />
                     <Text style={styles.viewButtonText}>View Full</Text>

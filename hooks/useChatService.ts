@@ -65,17 +65,28 @@ export function useChatService() {
   }, []);
 
   const extractImageUrls = (content: string): string[] => {
-    const matches = content.match(/!\[.*?\]\((.*?)\)/g) || [];
-    return matches.map(match => match.match(/!\[.*?\]\((.*?)\)/)![1]);
+    const markdownMatches = content.match(/!\[.*?\]\((.*?)\)/g) || [];
+    const markdownUrls = markdownMatches.map(match => match.match(/!\[.*?\]\((.*?)\)/)![1]);
+    
+    // Also check for direct URLs from the workspace
+    const workspaceMatches = content.match(/https:\/\/cdn\.snapzion\.com\/workspace-[^\s)]+/g) || [];
+    
+    return [...markdownUrls, ...workspaceMatches];
   };
 
   const addGeneratedImage = useCallback((imageUrl: string) => {
-    const newImage: GeneratedImage = {
-      url: imageUrl,
-      createdAt: Date.now()
-    };
+    if (!imageUrl.includes('cdn.snapzion.com')) return;
     
     setGeneratedImages(prev => {
+      // Check if image already exists
+      const exists = prev.some(img => img.url === imageUrl);
+      if (exists) return prev;
+      
+      const newImage: GeneratedImage = {
+        url: imageUrl,
+        createdAt: Date.now()
+      };
+      
       const updated = [newImage, ...prev];
       saveData(chats, activeChat, updated);
       return updated;
