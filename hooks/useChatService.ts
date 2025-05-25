@@ -65,32 +65,46 @@ export function useChatService() {
   }, []);
 
   const extractImageUrls = (content: string): string[] => {
+    // Extract markdown image URLs
     const markdownMatches = content.match(/!\[.*?\]\((.*?)\)/g) || [];
-    const markdownUrls = markdownMatches.map(match => match.match(/!\[.*?\]\((.*?)\)/)![1]);
+    const markdownUrls = markdownMatches.map(match => {
+      const url = match.match(/!\[.*?\]\((.*?)\)/)![1];
+      return url.trim();
+    });
     
-    // Also check for direct URLs from the workspace
-    const workspaceMatches = content.match(/https:\/\/cdn\.snapzion\.com\/workspace-[^\s)]+/g) || [];
+    // Extract direct workspace URLs
+    const workspaceUrlPattern = /https:\/\/cdn\.snapzion\.com\/workspace-[^\s\)]+/g;
+    const workspaceMatches = content.match(workspaceUrlPattern) || [];
+    const workspaceUrls = workspaceMatches.map(url => url.trim());
     
-    return [...markdownUrls, ...workspaceMatches];
+    // Combine and remove duplicates
+    const allUrls = [...new Set([...markdownUrls, ...workspaceUrls])];
+    
+    return allUrls.filter(url => url.startsWith('https://'));
   };
 
   const addGeneratedImage = useCallback((imageUrl: string) => {
-    if (!imageUrl.includes('cdn.snapzion.com')) return;
-    
-    setGeneratedImages(prev => {
-      // Check if image already exists
-      const exists = prev.some(img => img.url === imageUrl);
-      if (exists) return prev;
+    // Validate URL
+    try {
+      const url = new URL(imageUrl);
+      if (!url.href.includes('cdn.snapzion.com')) return;
       
-      const newImage: GeneratedImage = {
-        url: imageUrl,
-        createdAt: Date.now()
-      };
-      
-      const updated = [newImage, ...prev];
-      saveData(chats, activeChat, updated);
-      return updated;
-    });
+      setGeneratedImages(prev => {
+        // Check if image already exists
+        if (prev.some(img => img.url === url.href)) return prev;
+        
+        const newImage: GeneratedImage = {
+          url: url.href,
+          createdAt: Date.now()
+        };
+        
+        const updated = [newImage, ...prev];
+        saveData(chats, activeChat, updated);
+        return updated;
+      });
+    } catch (error) {
+      console.error('Invalid image URL:', error);
+    }
   }, [chats, activeChat, saveData]);
 
   const processStreamingResponse = async (

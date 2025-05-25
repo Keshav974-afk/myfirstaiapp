@@ -12,10 +12,14 @@ export default function LibraryScreen() {
   const { generatedImages } = useChatService();
 
   const handleViewImage = async (url: string) => {
-    if (Platform.OS === 'web') {
-      window.open(url, '_blank');
-    } else {
-      await WebBrowser.openBrowserAsync(url);
+    try {
+      if (Platform.OS === 'web') {
+        window.open(url, '_blank');
+      } else {
+        await WebBrowser.openBrowserAsync(url);
+      }
+    } catch (error) {
+      console.error('Error opening image:', error);
     }
   };
 
