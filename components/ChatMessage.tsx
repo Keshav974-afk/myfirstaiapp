@@ -21,13 +21,29 @@ interface ChatMessageProps {
 }
 
 function extractImageUrl(text: string): string | null {
-  const match = text.match(/!\[.*?\]\((.*?)\)/);
-  return match ? match[1] : null;
+  // Match standard markdown images: ![alt](url)
+  const markdownMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+  if (markdownMatch) return markdownMatch[2];
+
+  // Match alternative format: [!alt](url)
+  const altMatch = text.match(/\[!([^\]]*)\]\(([^)]+)\)/);
+  if (altMatch) return altMatch[2];
+
+  // Match direct image URLs
+  const urlMatch = text.match(/https?:\/\/[^\s<>)"]+?\.(?:jpg|jpeg|png|gif|webp)/i);
+  if (urlMatch) return urlMatch[0];
+
+  // Match Snapzion workspace URLs
+  const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.[a-z]+/i);
+  if (workspaceMatch) return workspaceMatch[0];
+
+  return null;
 }
 
 function formatMessage(text: string): string {
   return text
     .replace(/!\[.*?\]\((.*?)\)/g, '') // Remove image markdown
+    .replace(/\[!.*?\]\((.*?)\)/g, '') // Remove alternative image format
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
     .replace(/###\s*(.*?)(\n|$)/g, '$1')

@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
 import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
 
 interface ImagePreviewProps {
   imageUrl: string;
@@ -11,14 +12,49 @@ interface ImagePreviewProps {
 
 export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
   const colorScheme = useColorScheme();
+  const [error, setError] = useState(false);
 
   const handleViewImage = async () => {
-    if (Platform.OS === 'web') {
-      window.open(imageUrl, '_blank');
-    } else {
-      await WebBrowser.openBrowserAsync(imageUrl);
+    try {
+      if (Platform.OS === 'web') {
+        window.open(imageUrl, '_blank');
+      } else {
+        await WebBrowser.openBrowserAsync(imageUrl);
+      }
+    } catch (error) {
+      console.error('Error opening image:', error);
     }
   };
+
+  const handleImageError = () => {
+    setError(true);
+    console.warn('Failed to load image:', imageUrl);
+  };
+
+  if (error) {
+    return (
+      <View style={[
+        styles.errorContainer,
+        { backgroundColor: Colors[colorScheme ?? 'light'].dangerBackground }
+      ]}>
+        <Text style={[
+          styles.errorText,
+          { color: Colors[colorScheme ?? 'light'].danger }
+        ]}>
+          Failed to load image
+        </Text>
+        <Pressable
+          style={[
+            styles.retryButton,
+            { backgroundColor: Colors[colorScheme ?? 'light'].danger }
+          ]}
+          onPress={() => setError(false)}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -27,6 +63,7 @@ export function ImagePreview({ imageUrl, onDownload }: ImagePreviewProps) {
           source={{ uri: imageUrl }} 
           style={styles.image}
           resizeMode="cover"
+          onError={handleImageError}
         />
         <View style={styles.overlay} />
         <Pressable
@@ -88,6 +125,27 @@ const styles = StyleSheet.create({
   viewButtonText: {
     color: '#FFFFFF',
     marginLeft: 8,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  },
+  errorContainer: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 8,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
