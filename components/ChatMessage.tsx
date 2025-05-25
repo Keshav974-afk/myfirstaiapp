@@ -12,7 +12,9 @@ import Animated, {
   withSequence, 
   withTiming,
   FadeIn,
-  FadeOut
+  FadeOut,
+  SlideInUp,
+  SlideOutDown
 } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { ImagePreview } from './ImagePreview';
@@ -175,8 +177,8 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
         
         {showActions && (
           <Animated.View 
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
+            entering={SlideInUp.duration(200).springify()}
+            exiting={SlideOutDown.duration(150)}
             style={[
               styles.actionButtonsContainer,
               { backgroundColor: Colors[colorScheme ?? 'light'].background }
@@ -184,18 +186,24 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
           >
             <View style={styles.actionButtons}>
               <Pressable 
-                style={styles.actionButton} 
+                style={[
+                  styles.actionButton,
+                  copied && { backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent }
+                ]} 
                 onPress={handleCopy}
               >
                 {copied ? (
-                  <CheckCircle2 size={16} color="#10B981" />
+                  <CheckCircle2 size={16} color={Colors[colorScheme ?? 'light'].tint} />
                 ) : (
                   <Copy size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
                 )}
               </Pressable>
 
               <Pressable 
-                style={styles.actionButton}
+                style={[
+                  styles.actionButton,
+                  isSpeaking && { backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent }
+                ]}
                 onPress={handleSpeak}
               >
                 <Volume2 
@@ -215,7 +223,10 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
               </Pressable>
 
               <Pressable 
-                style={styles.actionButton}
+                style={[
+                  styles.actionButton,
+                  isBookmarked && { backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent }
+                ]}
                 onPress={handleBookmark}
               >
                 <Bookmark 
@@ -249,9 +260,10 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 32, // Increased to accommodate action buttons
+    marginBottom: 32,
     position: 'relative',
     width: '100%',
+    zIndex: 1,
   },
   userWrapper: {
     alignItems: 'flex-end',
@@ -295,10 +307,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '100%',
     left: '50%',
-    transform: [{ translateX: -90 }], // Half of the total width
+    transform: [{ translateX: -100 }], // Half of the total width
     marginTop: 8,
     borderRadius: 24,
-    zIndex: 1000, // Ensure it stays above other messages
+    zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -307,15 +319,15 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8,
-    padding: 8,
-    width: 180, // Fixed width for better positioning
-    justifyContent: 'center',
+    gap: 4,
+    padding: 6,
+    width: 200, // Fixed width for better positioning
+    justifyContent: 'space-around',
   },
   actionButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
