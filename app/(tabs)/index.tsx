@@ -84,6 +84,12 @@ export default function ChatScreen() {
 
   const handleSendMessage = async () => {
     if (message.trim() === '' || isLoading) return;
+    
+    // Check if the selected model is available before sending
+    if (!selectedModel) {
+      return;
+    }
+    
     await sendMessage(message);
     setMessage('');
     inputHeight.value = withTiming(50);
@@ -333,11 +339,11 @@ export default function ChatScreen() {
                   styles.sendButton,
                   {
                     backgroundColor: Colors[colorScheme ?? 'light'].tint,
-                    opacity: message.trim() ? 1 : 0.5
+                    opacity: message.trim() && !isLoading && selectedModel ? 1 : 0.5
                   }
                 ]}
                 onPress={handleSendMessage}
-                disabled={message.trim() === '' || isLoading}
+                disabled={message.trim() === '' || isLoading || !selectedModel}
               >
                 <Send size={20} color="#FFFFFF" />
               </Pressable>
