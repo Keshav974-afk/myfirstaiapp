@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, Pressable, Platform, Text, Animated } from 'react-native';
 import { Mic } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
@@ -11,11 +11,32 @@ interface VoiceButtonProps {
 export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   const colorScheme = useColorScheme();
   const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  const showError = (message: string) => {
+    setError(message);
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setError(null));
+  };
 
   const startListening = async () => {
     if (Platform.OS === 'web') {
       try {
         setIsListening(true);
+        setError(null);
+        
         // @ts-ignore
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -36,7 +57,22 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
         };
 
         recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
+          switch (event.error) {
+            case 'network':
+              showError('Network error. Check your connection.');
+              break;
+            case 'no-speech':
+              showError('No speech detected. Try again.');
+              break;
+            case 'not-allowed':
+              showError('Microphone access denied.');
+              break;
+            case 'service-not-allowed':
+              showError('Speech service not available.');
+              break;
+            default:
+              showError('Speech recognition error. Try again.');
+          }
           setIsListening(false);
         };
 
@@ -47,8 +83,11 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
         recognition.start();
       } catch (error) {
         console.error('Speech recognition error:', error);
+        showError('Speech recognition not supported');
         setIsListening(false);
       }
+    } else {
+      showError('Speech recognition not available on this platform');
     }
   };
 
@@ -74,14 +113,32 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
       >
         <Mic size={20} color="#FFFFFF" />
       </Pressable>
+
+      {error && (
+        <Animated.View 
+          style={[
+            styles.errorContainer,
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].dangerBackground,
+              opacity: fadeAnim 
+            }
+          ]}
+        >
+          <Text style={[
+            styles.errorText,
+            { color: Colors[colorScheme ?? 'light'].danger }
+          ]}>
+            {error}
+          </Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    gap: 8,
+    position: 'relative',
   },
   button: {
     width: 36,
@@ -92,5 +149,23 @@ const styles = StyleSheet.create({
   },
   activeButton: {
     opacity: 0.7,
+  },
+  errorContainer: {
+    position: 'absolute',
+    bottom: 50,
+    right: 0,
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
   },
 });
