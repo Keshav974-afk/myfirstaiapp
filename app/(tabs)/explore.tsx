@@ -91,6 +91,7 @@ export default function ExploreScreen() {
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
         {CATEGORIES.map((category, index) => (
           <Animated.View 
@@ -135,6 +136,11 @@ export default function ExploreScreen() {
                       }),
                     }
                   ]}
+                  android_ripple={{
+                    color: Colors[colorScheme ?? 'light'].ripple,
+                    borderless: true,
+                    foreground: true,
+                  }}
                 >
                   <Text style={[
                     styles.itemText,
@@ -162,7 +168,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: Platform.select({ ios: 28, android: 24 }),
     fontFamily: 'Inter-Bold',
   },
   searchContainer: {
@@ -180,7 +186,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 32,
   },
   category: {
     marginBottom: 24,
@@ -191,7 +200,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   categoryTitle: {
-    fontSize: 20,
+    fontSize: Platform.select({ ios: 20, android: 18 }),
     fontFamily: 'Inter-Bold',
     marginLeft: 12,
   },
@@ -205,6 +214,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   itemText: {
     fontSize: 15,

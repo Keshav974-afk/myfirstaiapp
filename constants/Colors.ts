@@ -22,6 +22,7 @@ export default {
     cardBackground: '#FFFFFF',
     cardBorder: 'rgba(0, 0, 0, 0.04)',
     cardShadow: 'rgba(0, 0, 0, 0.1)',
+    ripple: 'rgba(0, 102, 255, 0.12)',
   },
   dark: {
     text: '#FFFFFF',
@@ -43,5 +44,6 @@ export default {
     cardBackground: '#1C1C1E',
     cardBorder: 'rgba(255, 255, 255, 0.1)',
     cardShadow: 'rgba(0, 0, 0, 0.3)',
+    ripple: 'rgba(59, 130, 246, 0.2)',
   },
 };

@@ -11,11 +11,15 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         tabBarStyle: {
-          height: 65,
-          paddingBottom: 10,
+          height: Platform.select({ ios: 65, android: 60 }),
+          paddingBottom: Platform.select({ ios: 10, android: 6 }),
           borderTopWidth: 1,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
-          ...(Platform.OS === 'ios' ? {
+          backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
+          ...(Platform.OS === 'android' ? {
+            elevation: 8,
+            paddingTop: 4,
+          } : {
             shadowColor: Colors[colorScheme ?? 'light'].cardShadow,
             shadowOffset: {
               width: 0,
@@ -23,17 +27,15 @@ export default function TabLayout() {
             },
             shadowOpacity: 0.1,
             shadowRadius: 3,
-          } : {
-            elevation: 10,
           }),
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
           fontSize: 12,
-          marginTop: 2,
+          marginTop: Platform.OS === 'android' ? 0 : 2,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: Platform.OS === 'android' ? 2 : 4,
         },
         headerShown: false,
       }}>
