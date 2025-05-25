@@ -65,39 +65,55 @@ export function useChatService() {
   }, []);
 
   const extractImageUrls = (content: string): string[] => {
+    const urls: string[] = [];
+
     // Extract markdown image URLs
-    const markdownMatches = content.match(/!\[.*?\]\((.*?)\)/g) || [];
-    const markdownUrls = markdownMatches.map(match => {
-      const url = match.match(/!\[.*?\]\((.*?)\)/)![1];
-      return url.trim();
+    const markdownPattern = /!\[.*?\]\((.*?)\)/g;
+    let match;
+    while ((match = markdownPattern.exec(content)) !== null) {
+      if (match[1]) urls.push(match[1].trim());
+    }
+
+    // Extract direct URLs
+    const urlPattern = /https?:\/\/[^\s<>"]+?\/[^\s<>"]+?\.(png|jpe?g|gif|webp|bmp)/g;
+    let urlMatch;
+    while ((urlMatch = urlPattern.exec(content)) !== null) {
+      urls.push(urlMatch[0].trim());
+    }
+
+    // Extract workspace URLs
+    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[^\s<>"]+/g;
+    let workspaceMatch;
+    while ((workspaceMatch = workspacePattern.exec(content)) !== null) {
+      urls.push(workspaceMatch[0].trim());
+    }
+
+    // Remove duplicates and filter valid URLs
+    return [...new Set(urls)].filter(url => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
     });
-    
-    // Extract direct workspace URLs
-    const workspaceUrlPattern = /https:\/\/cdn\.snapzion\.com\/workspace-[^\s\)]+/g;
-    const workspaceMatches = content.match(workspaceUrlPattern) || [];
-    const workspaceUrls = workspaceMatches.map(url => url.trim());
-    
-    // Combine and remove duplicates
-    const allUrls = [...new Set([...markdownUrls, ...workspaceUrls])];
-    
-    return allUrls.filter(url => url.startsWith('https://'));
   };
 
   const addGeneratedImage = useCallback((imageUrl: string) => {
-    // Validate URL
     try {
       const url = new URL(imageUrl);
-      if (!url.href.includes('cdn.snapzion.com')) return;
       
       setGeneratedImages(prev => {
         // Check if image already exists
-        if (prev.some(img => img.url === url.href)) return prev;
-        
+        if (prev.some(img => img.url === url.href)) {
+          return prev;
+        }
+
         const newImage: GeneratedImage = {
           url: url.href,
           createdAt: Date.now()
         };
-        
+
         const updated = [newImage, ...prev];
         saveData(chats, activeChat, updated);
         return updated;
