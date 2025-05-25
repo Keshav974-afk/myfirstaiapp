@@ -38,8 +38,11 @@ function extractImageUrl(text: string): string | null {
   if (urlMatch) return urlMatch[0];
 
   // Match Snapzion workspace URLs
-  const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.[a-z]+/i);
-  if (workspaceMatch) return workspaceMatch[0];
+  const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+(?:\.[a-z]+)?/i);
+  if (workspaceMatch) {
+    const url = workspaceMatch[0];
+    return url.endsWith('.png') ? url : `${url}.png`;
+  }
 
   return null;
 }
@@ -139,6 +142,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
       <Pressable 
         style={styles.messageWrapper}
         onLongPress={() => setShowActions(true)}
+        onPress={() => setShowActions(false)}
       >
         <View style={[
           styles.bubble,
@@ -238,12 +242,13 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 24, // Increased to prevent overlap
     maxWidth: '85%',
     position: 'relative',
   },
   messageWrapper: {
     position: 'relative',
+    zIndex: 1, // Ensure message stays above other elements
   },
   userContainer: {
     alignSelf: 'flex-end',
@@ -255,6 +260,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    elevation: 2, // Add elevation for Android
+    shadowColor: '#000', // Add shadow for iOS
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
   },
   messageText: {
     fontSize: 16,
@@ -263,12 +276,14 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     position: 'absolute',
-    bottom: -36,
+    top: '100%', // Position below the message
     right: 8,
     flexDirection: 'row',
     gap: 8,
     padding: 6,
     borderRadius: 20,
+    marginTop: 8, // Add space between message and actions
+    zIndex: 2, // Ensure actions stay above messages
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -281,5 +296,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
 });
