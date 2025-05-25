@@ -140,7 +140,7 @@ export function useChatService() {
     }
   };
 
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, file?: any) => {
     if (!apiKey || !apiUrl || !selectedModel) {
       setError('API key, URL, or model not set. Please check your settings.');
       return;
@@ -178,18 +178,33 @@ export function useChatService() {
     await saveChatHistory(updatedChats, currentChatId);
 
     try {
+      const formData = new FormData();
+      
+      // Add message data
+      formData.append('model', selectedModel.id);
+      formData.append('messages', JSON.stringify(updatedMessages.map(msg => ({ 
+        role: msg.role, 
+        content: msg.content 
+      }))));
+      formData.append('temperature', '0.7');
+      formData.append('stream', String(streamingEnabled));
+
+      // Add file if present
+      if (file) {
+        formData.append('file', {
+          uri: file.uri,
+          type: file.mimeType,
+          name: file.name || 'file',
+        });
+      }
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'multipart/form-data',
         },
-        body: JSON.stringify({
-          model: selectedModel.id,
-          messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-          temperature: 0.7,
-          stream: streamingEnabled,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
