@@ -13,7 +13,7 @@ export default function TabLayout() {
         tabBarStyle: {
           height: Platform.select({ ios: 65, android: 60 }),
           paddingBottom: Platform.select({ ios: 10, android: 6 }),
-          borderTopWidth: 1,
+          borderTopWidth: Platform.OS === 'ios' ? 1 : 0,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
           backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
           ...(Platform.OS === 'android' ? {
@@ -32,10 +32,10 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
           fontSize: 12,
-          marginTop: Platform.OS === 'android' ? 0 : 2,
+          marginTop: Platform.OS === 'android' ? -2 : 2,
         },
         tabBarIconStyle: {
-          marginTop: Platform.OS === 'android' ? 2 : 4,
+          marginTop: Platform.OS === 'android' ? 4 : 4,
         },
         headerShown: false,
       }}>

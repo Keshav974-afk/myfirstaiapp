@@ -7,10 +7,10 @@ import {
   Modal, 
   FlatList,
   useColorScheme,
-  TextInput
+  TextInput,
+  Platform
 } from 'react-native';
 import { ChevronDown, Search } from 'lucide-react-native';
-import { Platform } from 'react-native';
 import Animated, { 
   FadeIn, 
   FadeOut, 
@@ -54,15 +54,22 @@ export function ModelSelector() {
     
     return (
       <Pressable
-        style={[
+        style={({ pressed }) => [
           styles.modelItem,
           isSelected && {
             backgroundColor: item.color
               ? `${item.color}20`
               : Colors[colorScheme ?? 'light'].tintTransparent,
           },
+          Platform.OS === 'android' && pressed && {
+            backgroundColor: Colors[colorScheme ?? 'light'].ripple,
+          }
         ]}
         onPress={() => handleSelectModel(item)}
+        android_ripple={{
+          color: Colors[colorScheme ?? 'light'].ripple,
+          borderless: true,
+        }}
       >
         <View style={[
           styles.modelDot,
@@ -105,11 +112,18 @@ export function ModelSelector() {
   return (
     <View>
       <Pressable 
-        style={[
+        style={({ pressed }) => [
           styles.selector,
-          { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
+          { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground },
+          Platform.OS === 'android' && pressed && {
+            backgroundColor: Colors[colorScheme ?? 'light'].ripple,
+          }
         ]}
         onPress={handleOpenModal}
+        android_ripple={{
+          color: Colors[colorScheme ?? 'light'].ripple,
+          borderless: true,
+        }}
       >
         <View style={[
           styles.modelDot,
@@ -124,6 +138,7 @@ export function ModelSelector() {
         <ChevronDown 
           size={16} 
           color={Colors[colorScheme ?? 'light'].textSecondary} 
+          strokeWidth={2.5}
         />
       </Pressable>
 
@@ -131,7 +146,11 @@ export function ModelSelector() {
         visible={modalVisible}
         transparent
         animationType="none"
-        onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent
+        onRequestClose={() => {
+          setModalVisible(false);
+          setSearchQuery('');
+        }}
       >
         <Pressable 
           style={styles.modalOverlay}
@@ -143,7 +162,10 @@ export function ModelSelector() {
           <Animated.View 
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(200)}
-            style={StyleSheet.absoluteFill}
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+            ]}
           />
         </Pressable>
         
@@ -152,7 +174,10 @@ export function ModelSelector() {
           exiting={SlideOutDown.duration(200)}
           style={[
             styles.modalContent,
-            { backgroundColor: colorScheme === 'dark' ? '#1C1C1E' : '#FFFFFF' }
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
+              borderTopColor: Colors[colorScheme ?? 'light'].border,
+            }
           ]}
         >
           <View style={styles.modalHeader}>
@@ -171,6 +196,7 @@ export function ModelSelector() {
             <Search 
               size={20} 
               color={Colors[colorScheme ?? 'light'].textSecondary} 
+              strokeWidth={2.2}
             />
             <TextInput
               style={[
@@ -191,6 +217,8 @@ export function ModelSelector() {
             keyExtractor={(item) => item.id}
             style={styles.modelList}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modelListContent}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Text style={[
@@ -213,8 +241,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: Platform.select({ ios: 8, android: 6 }),
     borderRadius: 16,
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   selectedModelText: {
     marginLeft: 8,
@@ -224,25 +253,31 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     maxHeight: '80%',
+    borderTopWidth: 1,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    } : {
+      elevation: 24,
+    }),
   },
   modalHeader: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: Platform.select({ ios: 18, android: 20 }),
     fontFamily: 'Inter-Bold',
     textAlign: 'center',
   },
@@ -251,17 +286,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 16,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: Platform.select({ ios: 8, android: 4 }),
+    borderRadius: 12,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
+    paddingVertical: Platform.select({ ios: 0, android: 8 }),
   },
   modelList: {
+    flex: 1,
+  },
+  modelListContent: {
     padding: 16,
+    paddingTop: 0,
   },
   modelItem: {
     flexDirection: 'row',
@@ -270,6 +310,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 8,
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   modelDot: {
     width: 10,
