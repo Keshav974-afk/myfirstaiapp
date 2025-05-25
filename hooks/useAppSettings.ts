@@ -12,6 +12,8 @@ interface AppSettingsContextType {
   setSelectedModel: (model: AIModel) => void;
   streamingEnabled: boolean;
   setStreamingEnabled: (enabled: boolean) => void;
+  webSearchEnabled: boolean;
+  setWebSearchEnabled: (enabled: boolean) => void;
 }
 
 const AppSettingsContext = createContext<AppSettingsContextType>({
@@ -23,6 +25,8 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
   setSelectedModel: () => {},
   streamingEnabled: false,
   setStreamingEnabled: () => {},
+  webSearchEnabled: true,
+  setWebSearchEnabled: () => {},
 });
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
@@ -30,6 +34,7 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
   const [apiUrl, setApiUrl] = useState<string>('https://fast.typegpt.net/v1/chat/completions');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(DEFAULT_MODEL);
   const [streamingEnabled, setStreamingEnabled] = useState<boolean>(true);
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -38,6 +43,7 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
         const storedApiUrl = await AsyncStorage.getItem('apiUrl');
         const storedModelId = await AsyncStorage.getItem('selectedModelId');
         const storedStreamingEnabled = await AsyncStorage.getItem('streamingEnabled');
+        const storedWebSearchEnabled = await AsyncStorage.getItem('webSearchEnabled');
 
         if (storedApiKey) setApiKey(storedApiKey);
         if (storedApiUrl) setApiUrl(storedApiUrl);
@@ -49,6 +55,10 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
         
         if (storedStreamingEnabled !== null) {
           setStreamingEnabled(storedStreamingEnabled === 'true');
+        }
+
+        if (storedWebSearchEnabled !== null) {
+          setWebSearchEnabled(storedWebSearchEnabled === 'true');
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -78,6 +88,11 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
     await AsyncStorage.setItem('streamingEnabled', String(enabled));
   };
 
+  const handleSetWebSearchEnabled = async (enabled: boolean) => {
+    setWebSearchEnabled(enabled);
+    await AsyncStorage.setItem('webSearchEnabled', String(enabled));
+  };
+
   const value = {
     apiKey,
     setApiKey: handleSetApiKey,
@@ -87,6 +102,8 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
     setSelectedModel: handleSetSelectedModel,
     streamingEnabled,
     setStreamingEnabled: handleSetStreamingEnabled,
+    webSearchEnabled,
+    setWebSearchEnabled: handleSetWebSearchEnabled,
   };
 
   return createElement(AppSettingsContext.Provider, { value }, children);

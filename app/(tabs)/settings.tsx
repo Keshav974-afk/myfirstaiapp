@@ -24,13 +24,14 @@ export default function SettingsScreen() {
     apiUrl, 
     setApiUrl, 
     streamingEnabled, 
-    setStreamingEnabled
+    setStreamingEnabled,
+    webSearchEnabled,
+    setWebSearchEnabled
   } = useAppSettings();
   const { clearChatHistory } = useChatService();
   const [tempApiKey, setTempApiKey] = useState(apiKey);
   const [tempApiUrl, setTempApiUrl] = useState(apiUrl);
 
-  // Update local state when settings change
   useEffect(() => {
     setTempApiKey(apiKey);
     setTempApiUrl(apiUrl);
@@ -46,6 +47,10 @@ export default function SettingsScreen() {
 
   const handleToggleStreaming = () => {
     setStreamingEnabled(!streamingEnabled);
+  };
+
+  const handleToggleWebSearch = () => {
+    setWebSearchEnabled(!webSearchEnabled);
   };
 
   const handleClearHistory = () => {
@@ -234,6 +239,36 @@ export default function SettingsScreen() {
               }}
               thumbColor={
                 streamingEnabled 
+                  ? Colors[colorScheme ?? 'light'].tint 
+                  : '#f4f3f4'
+              }
+            />
+          </View>
+
+          <View style={styles.switchContainer}>
+            <View>
+              <Text style={[
+                styles.switchLabel,
+                { color: Colors[colorScheme ?? 'light'].text }
+              ]}>
+                Enable Web Search
+              </Text>
+              <Text style={[
+                styles.switchDescription,
+                { color: Colors[colorScheme ?? 'light'].textSecondary }
+              ]}>
+                Allow AI to search the web for information
+              </Text>
+            </View>
+            <Switch
+              value={webSearchEnabled}
+              onValueChange={handleToggleWebSearch}
+              trackColor={{ 
+                false: '#767577', 
+                true: Colors[colorScheme ?? 'light'].tintTransparent 
+              }}
+              thumbColor={
+                webSearchEnabled 
                   ? Colors[colorScheme ?? 'light'].tint 
                   : '#f4f3f4'
               }
