@@ -4,10 +4,15 @@ import { Mic } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
 
-// Only import Voice on native platforms
-let Voice: any;
+// Dynamic import for Voice
+let Voice: any = null;
 if (Platform.OS !== 'web') {
-  Voice = require('react-native-voice').default;
+  // Using import() for dynamic loading
+  import('react-native-voice').then(module => {
+    Voice = module.default;
+  }).catch(error => {
+    console.error('Error loading Voice module:', error);
+  });
 }
 
 interface VoiceButtonProps {
@@ -29,32 +34,42 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [isVoiceLoaded, setIsVoiceLoaded] = useState(Platform.OS === 'web');
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
-      Voice.onSpeechResults = (e: SpeechResultsEvent) => {
-        if (e.value && e.value[0] && onSpeechResult) {
-          onSpeechResult(e.value[0]);
-        }
-        setIsListening(false);
-      };
+      // Initialize Voice when component mounts
+      import('react-native-voice').then(module => {
+        Voice = module.default;
+        setIsVoiceLoaded(true);
 
-      Voice.onSpeechError = (e: SpeechErrorEvent) => {
-        let errorMessage = 'Speech recognition error. Try again.';
-        if (e.error?.message) {
-          if (e.error.message.includes('network')) {
-            errorMessage = 'Network error. Check your connection.';
-          } else if (e.error.message.includes('permission')) {
-            errorMessage = 'Microphone access denied.';
+        Voice.onSpeechResults = (e: SpeechResultsEvent) => {
+          if (e.value && e.value[0] && onSpeechResult) {
+            onSpeechResult(e.value[0]);
           }
-        }
-        showError(errorMessage);
-        setIsListening(false);
-      };
+          setIsListening(false);
+        };
 
-      return () => {
-        Voice.destroy().then(Voice.removeAllListeners);
-      };
+        Voice.onSpeechError = (e: SpeechErrorEvent) => {
+          let errorMessage = 'Speech recognition error. Try again.';
+          if (e.error?.message) {
+            if (e.error.message.includes('network')) {
+              errorMessage = 'Network error. Check your connection.';
+            } else if (e.error.message.includes('permission')) {
+              errorMessage = 'Microphone access denied.';
+            }
+          }
+          showError(errorMessage);
+          setIsListening(false);
+        };
+
+        return () => {
+          Voice.destroy().then(Voice.removeAllListeners);
+        };
+      }).catch(error => {
+        console.error('Error initializing Voice:', error);
+        setIsVoiceLoaded(false);
+      });
     }
   }, [onSpeechResult]);
 
@@ -125,7 +140,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
         };
 
         recognition.start();
-      } else {
+      } else if (isVoiceLoaded && Voice) {
         // Mobile implementation using react-native-voice
         try {
           await Voice.start('en-US');
@@ -133,6 +148,9 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
           showError('Failed to start speech recognition');
           setIsListening(false);
         }
+      } else {
+        showError('Speech recognition not available');
+        setIsListening(false);
       }
     } catch (error) {
       console.error('Speech recognition error:', error);
@@ -142,7 +160,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
   };
 
   const stopListening = async () => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== 'web' && isVoiceLoaded && Voice) {
       try {
         await Voice.stop();
       } catch (e) {
