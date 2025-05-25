@@ -26,32 +26,36 @@ interface ChatMessageProps {
 }
 
 function extractImageUrl(text: string): string | null {
-  // Match standard markdown images: ![alt](url)
-  const markdownMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-  if (markdownMatch) return markdownMatch[2];
+  try {
+    // Match standard markdown images: ![alt](url)
+    const markdownMatch = text.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+    if (markdownMatch && markdownMatch[2]) {
+      return markdownMatch[2].trim();
+    }
 
-  // Match alternative format: [!alt](url)
-  const altMatch = text.match(/\[!([^\]]*)\]\(([^)]+)\)/);
-  if (altMatch) return altMatch[2];
+    // Match direct image URLs
+    const urlMatch = text.match(/https?:\/\/[^\s<>)"]+?\.(?:jpg|jpeg|png|gif|webp)/i);
+    if (urlMatch) {
+      return urlMatch[0].trim();
+    }
 
-  // Match direct image URLs
-  const urlMatch = text.match(/https?:\/\/[^\s<>)"]+?\.(?:jpg|jpeg|png|gif|webp)/i);
-  if (urlMatch) return urlMatch[0];
+    // Match Snapzion workspace URLs
+    const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+/);
+    if (workspaceMatch) {
+      const url = workspaceMatch[0].trim();
+      return url.endsWith('.png') ? url : `${url}.png`;
+    }
 
-  // Match Snapzion workspace URLs with proper regex escaping
-  const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+(?:\.[a-z]+)?/i);
-  if (workspaceMatch) {
-    const url = workspaceMatch[0];
-    return url.endsWith('.png') ? url : `${url}.png`;
+    return null;
+  } catch (error) {
+    console.error('Error extracting image URL:', error);
+    return null;
   }
-
-  return null;
 }
 
 function formatMessage(text: string): string {
   return text
     .replace(/!\[.*?\]\((.*?)\)/g, '') // Remove image markdown
-    .replace(/\[!.*?\]\((.*?)\)/g, '') // Remove alternative image format
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
     .replace(/###\s*(.*?)(\n|$)/g, '$1')
@@ -129,14 +133,17 @@ function extractMathBlocks(text: string): { type: 'text' | 'math' | 'image', con
     if (part.type === 'text') {
       const imageUrl = extractImageUrl(part.content);
       if (imageUrl) {
-        const textParts = part.content.split(new RegExp(`(${imageUrl})`));
-        textParts.forEach(textPart => {
-          if (textPart === imageUrl) {
-            processedParts.push({ type: 'image', content: imageUrl });
-          } else if (textPart.trim()) {
-            processedParts.push({ type: 'text', content: formatMessage(textPart) });
+        if (part.content.trim() !== imageUrl) {
+          const beforeImage = part.content.split(imageUrl)[0];
+          if (beforeImage.trim()) {
+            processedParts.push({ type: 'text', content: formatMessage(beforeImage) });
           }
-        });
+        }
+        processedParts.push({ type: 'image', content: imageUrl });
+        const afterImage = part.content.split(imageUrl)[1];
+        if (afterImage?.trim()) {
+          processedParts.push({ type: 'text', content: formatMessage(afterImage) });
+        }
       } else {
         processedParts.push({ type: 'text', content: formatMessage(part.content) });
       }
@@ -481,5 +488,3 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
-
-export { ChatMessage }
