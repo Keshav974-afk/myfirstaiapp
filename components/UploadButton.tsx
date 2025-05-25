@@ -23,16 +23,18 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.7,
-        base64: false, // Disable base64 encoding
+        quality: 1,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         onUpload({
-          name: 'image.jpg',
           uri: asset.uri,
           type: 'image',
+          mimeType: 'image/jpeg',
+          width: asset.width,
+          height: asset.height,
         });
       }
     } catch (error) {
@@ -45,15 +47,17 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
-        copyToCacheDirectory: false, // Don't copy to cache to save memory
+        copyToCacheDirectory: false,
       });
 
       if (result.assets && result.assets[0]) {
         const asset = result.assets[0];
         onUpload({
-          name: asset.name,
           uri: asset.uri,
           type: 'document',
+          name: asset.name,
+          mimeType: asset.mimeType,
+          size: asset.size,
         });
       }
     } catch (error) {
