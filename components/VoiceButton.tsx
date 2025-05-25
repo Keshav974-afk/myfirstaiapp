@@ -3,10 +3,25 @@ import { StyleSheet, View, Pressable, Platform, Text, Animated } from 'react-nat
 import { Mic } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import Colors from '@/constants/Colors';
-import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
+
+// Only import Voice on native platforms
+let Voice: any;
+if (Platform.OS !== 'web') {
+  Voice = require('react-native-voice').default;
+}
 
 interface VoiceButtonProps {
   onSpeechResult?: (text: string) => void;
+}
+
+interface SpeechResultsEvent {
+  value?: string[];
+}
+
+interface SpeechErrorEvent {
+  error?: {
+    message?: string;
+  };
 }
 
 export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
@@ -67,7 +82,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
 
       if (Platform.OS === 'web') {
         // Web implementation using Web Speech API
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
           throw new Error('Speech recognition not supported');
         }
@@ -77,7 +92,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
-        recognition.onresult = (event) => {
+        recognition.onresult = (event: any) => {
           const text = event.results[0][0].transcript;
           if (onSpeechResult) {
             onSpeechResult(text);
@@ -85,7 +100,7 @@ export function VoiceButton({ onSpeechResult }: VoiceButtonProps) {
           setIsListening(false);
         };
 
-        recognition.onerror = (event) => {
+        recognition.onerror = (event: any) => {
           switch (event.error) {
             case 'network':
               showError('Network error. Check your connection.');
