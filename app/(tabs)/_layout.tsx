@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { MessageSquare, Settings, Library, Search, Sparkles } from 'lucide-react-native';
+import { MessageSquare, Search, Library, Settings } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 
 export default function TabLayout() {

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { Send, Menu, Plus, Trash2, Wand as Wand2, Globe as Globe2, Brain, Lightbulb, Mic, Settings2 } from 'lucide-react-native';
+import { Send, Menu, Plus, Trash2, Wand2, Globe2, Brain, Lightbulb, Mic, Settings2 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ModelSelector } from '@/components/ModelSelector';
@@ -22,12 +22,10 @@ import { ChatList } from '@/components/ChatList';
 import { useChatService } from '@/hooks/useChatService';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { VoiceButton } from '@/components/VoiceButton';
-import { UploadButton } from '@/components/UploadButton';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
-  withTiming, 
-  interpolate,
+  withTiming,
   FadeIn,
   FadeOut,
   SlideInLeft,
