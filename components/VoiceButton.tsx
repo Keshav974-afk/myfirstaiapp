@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import { Mic, Volume2 } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import { useColorScheme } from 'react-native';
@@ -55,9 +55,6 @@ export function VoiceButton({ onSpeechResult, textToSpeak }: VoiceButtonProps) {
         onPress={startListening}
       >
         <Mic size={20} color="#FFFFFF" />
-        <Text style={styles.buttonText}>
-          {isListening ? 'Listening...' : 'Voice'}
-        </Text>
       </Pressable>
 
       {textToSpeak && (
@@ -70,9 +67,6 @@ export function VoiceButton({ onSpeechResult, textToSpeak }: VoiceButtonProps) {
           onPress={speak}
         >
           <Volume2 size={20} color="#FFFFFF" />
-          <Text style={styles.buttonText}>
-            {isSpeaking ? 'Speaking...' : 'Speak'}
-          </Text>
         </Pressable>
       )}
     </View>
@@ -83,21 +77,15 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     gap: 8,
-    padding: 8,
   },
   button: {
-    flexDirection: 'row',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
-    borderRadius: 8,
-    gap: 4,
   },
   activeButton: {
     opacity: 0.7,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
   },
 });

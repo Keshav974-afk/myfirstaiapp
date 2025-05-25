@@ -1,5 +1,5 @@
-import { StyleSheet, View, Text, Pressable } from 'react-native';
-import { Upload, Image as ImageIcon, FileText, Globe } from 'lucide-react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
+import { Image as ImageIcon, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useColorScheme } from 'react-native';
@@ -48,7 +48,6 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
         onPress={pickImage}
       >
         <ImageIcon size={20} color="#FFFFFF" />
-        <Text style={styles.buttonText}>Image</Text>
       </Pressable>
 
       <Pressable
@@ -59,7 +58,6 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
         onPress={pickDocument}
       >
         <FileText size={20} color="#FFFFFF" />
-        <Text style={styles.buttonText}>Document</Text>
       </Pressable>
     </View>
   );
@@ -69,18 +67,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     gap: 8,
-    padding: 8,
   },
   button: {
-    flexDirection: 'row',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
-    borderRadius: 8,
-    gap: 4,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
   },
 });

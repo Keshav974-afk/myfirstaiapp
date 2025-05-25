@@ -344,12 +344,14 @@ export default function ChatScreen() {
             keyboardVerticalOffset={90}
             style={styles.inputContainer}
           >
-            <UploadButton onUpload={handleUpload} />
-            <VoiceButton 
-              onSpeechResult={handleVoiceResult}
-              textToSpeak={currentChat?.messages[currentChat.messages.length - 1]?.content}
-            />
-            
+            <View style={styles.actionButtonsContainer}>
+              <UploadButton onUpload={handleUpload} />
+              <VoiceButton 
+                onSpeechResult={handleVoiceResult}
+                textToSpeak={currentChat?.messages[currentChat.messages.length - 1]?.content}
+              />
+            </View>
+
             <Animated.View 
               style={[
                 styles.inputWrapper,
@@ -517,10 +519,17 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     lineHeight: 24,
   },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
   inputContainer: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
-    padding: 10,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -528,6 +537,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    margin: 10,
   },
   input: {
     flex: 1,
