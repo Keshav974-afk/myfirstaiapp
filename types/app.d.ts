@@ -24,6 +24,11 @@ export interface AIModel {
   color?: string;
 }
 
+export interface GeneratedImage {
+  url: string;
+  createdAt: number;
+}
+
 export interface ChatResponse {
   id: string;
   object: string;

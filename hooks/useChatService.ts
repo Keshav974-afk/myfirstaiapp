@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Message, Chat, ChatHistory } from '@/types/app';
+import { Message, Chat, ChatHistory, GeneratedImage } from '@/types/app';
 import { useAppSettings } from './useAppSettings';
 
 export function useChatService() {
@@ -8,77 +8,79 @@ export function useChatService() {
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const { apiKey, apiUrl, selectedModel, streamingEnabled } = useAppSettings();
 
   useEffect(() => {
-    const loadChatHistory = async () => {
+    const loadData = async () => {
       try {
-        const storedHistory = await AsyncStorage.getItem('chatHistory');
+        const [storedHistory, storedImages] = await Promise.all([
+          AsyncStorage.getItem('chatHistory'),
+          AsyncStorage.getItem('generatedImages')
+        ]);
+
         if (storedHistory) {
           const history: ChatHistory = JSON.parse(storedHistory);
           setChats(history.chats || []);
           setActiveChat(history.activeChat || null);
         }
+
+        if (storedImages) {
+          setGeneratedImages(JSON.parse(storedImages));
+        }
       } catch (error) {
-        console.error('Error loading chat history:', error);
+        console.error('Error loading data:', error);
         setChats([]);
         setActiveChat(null);
+        setGeneratedImages([]);
       }
     };
 
-    loadChatHistory();
+    loadData();
   }, []);
 
-  const saveChatHistory = useCallback(async (updatedChats: Chat[], updatedActiveChat: string | null) => {
+  const saveData = useCallback(async (
+    updatedChats: Chat[], 
+    updatedActiveChat: string | null,
+    updatedImages?: GeneratedImage[]
+  ) => {
     try {
-      const historyToSave: ChatHistory = {
-        chats: updatedChats || [],
-        activeChat: updatedActiveChat
-      };
-      await AsyncStorage.setItem('chatHistory', JSON.stringify(historyToSave));
+      const savePromises = [
+        AsyncStorage.setItem('chatHistory', JSON.stringify({
+          chats: updatedChats || [],
+          activeChat: updatedActiveChat
+        }))
+      ];
+
+      if (updatedImages) {
+        savePromises.push(
+          AsyncStorage.setItem('generatedImages', JSON.stringify(updatedImages))
+        );
+      }
+
+      await Promise.all(savePromises);
     } catch (error) {
-      console.error('Error saving chat history:', error);
+      console.error('Error saving data:', error);
     }
   }, []);
 
-  const createNewChat = useCallback(() => {
-    if (!selectedModel) {
-      setError('Please select an AI model before starting a chat.');
-      return null;
-    }
+  const extractImageUrls = (content: string): string[] => {
+    const matches = content.match(/!\[.*?\]\((.*?)\)/g) || [];
+    return matches.map(match => match.match(/!\[.*?\]\((.*?)\)/)![1]);
+  };
 
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      title: 'New Chat',
-      messages: [],
-      createdAt: Date.now(),
-      model: selectedModel.id
+  const addGeneratedImage = useCallback((imageUrl: string) => {
+    const newImage: GeneratedImage = {
+      url: imageUrl,
+      createdAt: Date.now()
     };
     
-    const updatedChats = [newChat, ...(chats || [])];
-    setChats(updatedChats);
-    setActiveChat(newChat.id);
-    saveChatHistory(updatedChats, newChat.id);
-    return newChat.id;
-  }, [chats, selectedModel, saveChatHistory]);
-
-  const updateChatTitle = useCallback((chatId: string, firstMessage: string) => {
-    if (!chats) return;
-
-    const updatedChats = chats.map(chat => {
-      if (chat.id === chatId) {
-        return {
-          ...chat,
-          title: firstMessage.length > 50 
-            ? firstMessage.substring(0, 50) + '...'
-            : firstMessage
-        };
-      }
-      return chat;
+    setGeneratedImages(prev => {
+      const updated = [newImage, ...prev];
+      saveData(chats, activeChat, updated);
+      return updated;
     });
-    setChats(updatedChats);
-    saveChatHistory(updatedChats, activeChat);
-  }, [chats, activeChat, saveChatHistory]);
+  }, [chats, activeChat, saveData]);
 
   const processStreamingResponse = async (
     response: Response, 
@@ -114,6 +116,9 @@ export function useChatService() {
               if (content) {
                 fullResponse += content;
                 
+                const imageUrls = extractImageUrls(content);
+                imageUrls.forEach(addGeneratedImage);
+
                 const updatedChatsWithStream = chats.map(chat =>
                   chat.id === currentChatId
                     ? {
@@ -127,7 +132,7 @@ export function useChatService() {
                 );
 
                 setChats(updatedChatsWithStream);
-                await saveChatHistory(updatedChatsWithStream, currentChatId);
+                await saveData(updatedChatsWithStream, currentChatId);
               }
             } catch (e) {
               console.warn('Error parsing streaming data:', e);
@@ -143,8 +148,46 @@ export function useChatService() {
     }
   };
 
+  const createNewChat = useCallback(() => {
+    if (!selectedModel) {
+      setError('Please select an AI model before starting a chat.');
+      return null;
+    }
+
+    const newChat: Chat = {
+      id: Date.now().toString(),
+      title: 'New Chat',
+      messages: [],
+      createdAt: Date.now(),
+      model: selectedModel.id
+    };
+    
+    const updatedChats = [newChat, ...(chats || [])];
+    setChats(updatedChats);
+    setActiveChat(newChat.id);
+    saveData(updatedChats, newChat.id);
+    return newChat.id;
+  }, [chats, selectedModel, saveData]);
+
+  const updateChatTitle = useCallback((chatId: string, firstMessage: string) => {
+    if (!chats) return;
+
+    const updatedChats = chats.map(chat => {
+      if (chat.id === chatId) {
+        return {
+          ...chat,
+          title: firstMessage.length > 50 
+            ? firstMessage.substring(0, 50) + '...'
+            : firstMessage
+        };
+      }
+      return chat;
+    });
+    setChats(updatedChats);
+    saveData(updatedChats, activeChat);
+  }, [chats, activeChat, saveData]);
+
   const sendMessage = useCallback(async (message: string, file?: any) => {
-    // Validate required settings
     if (!apiKey) {
       setError('API key not set. Please check your settings.');
       return;
@@ -191,7 +234,7 @@ export function useChatService() {
     );
 
     setChats(updatedChats);
-    await saveChatHistory(updatedChats, currentChatId);
+    await saveData(updatedChats, currentChatId);
 
     try {
       const requestBody = {
@@ -272,6 +315,9 @@ export function useChatService() {
           content: data.choices[0]?.message?.content || '',
         };
         
+        const imageUrls = extractImageUrls(assistantMessage.content);
+        imageUrls.forEach(addGeneratedImage);
+        
         const finalChats = chats.map(chat =>
           chat.id === currentChatId
             ? { ...chat, messages: [...updatedMessages, assistantMessage] }
@@ -279,7 +325,7 @@ export function useChatService() {
         );
         
         setChats(finalChats);
-        await saveChatHistory(finalChats, currentChatId);
+        await saveData(finalChats, currentChatId);
       }
     } catch (err: any) {
       console.error('Error sending message:', err);
@@ -291,22 +337,26 @@ export function useChatService() {
           : chat
       );
       setChats(revertedChats);
-      await saveChatHistory(revertedChats, currentChatId);
+      await saveData(revertedChats, currentChatId);
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey, apiUrl, selectedModel, chats, activeChat, streamingEnabled, createNewChat, updateChatTitle, saveChatHistory]);
+  }, [apiKey, apiUrl, selectedModel, chats, activeChat, streamingEnabled, createNewChat, updateChatTitle, saveData, addGeneratedImage]);
 
   const selectChat = useCallback((chatId: string) => {
     if (!chats?.some(chat => chat.id === chatId)) return;
     setActiveChat(chatId);
-    saveChatHistory(chats, chatId);
-  }, [chats, saveChatHistory]);
+    saveData(chats, chatId);
+  }, [chats, saveData]);
 
   const clearChatHistory = useCallback(async () => {
     setChats([]);
     setActiveChat(null);
-    await AsyncStorage.setItem('chatHistory', JSON.stringify({ chats: [], activeChat: null }));
+    setGeneratedImages([]);
+    await Promise.all([
+      AsyncStorage.setItem('chatHistory', JSON.stringify({ chats: [], activeChat: null })),
+      AsyncStorage.setItem('generatedImages', JSON.stringify([]))
+    ]);
   }, []);
 
   const deleteChat = useCallback((chatId: string) => {
@@ -319,8 +369,8 @@ export function useChatService() {
     
     setChats(updatedChats);
     setActiveChat(updatedActiveChat);
-    saveChatHistory(updatedChats, updatedActiveChat);
-  }, [chats, activeChat, saveChatHistory]);
+    saveData(updatedChats, updatedActiveChat);
+  }, [chats, activeChat, saveData]);
 
   return {
     sendMessage,
@@ -332,6 +382,7 @@ export function useChatService() {
     clearChatHistory,
     createNewChat,
     selectChat,
-    deleteChat
+    deleteChat,
+    generatedImages
   };
 }

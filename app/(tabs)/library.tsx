@@ -1,34 +1,14 @@
-import { StyleSheet, View, Text, ScrollView, Image, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Image, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { Image as ImageIcon, ExternalLink } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useChatService } from '@/hooks/useChatService';
-
-function extractImageUrls(messages: any[]): { url: string, date: number }[] {
-  const imageUrls: { url: string, date: number }[] = [];
-  
-  messages.forEach(message => {
-    const matches = message.content.match(/!\[.*?\]\((.*?)\)/g);
-    if (matches) {
-      matches.forEach(match => {
-        const url = match.match(/!\[.*?\]\((.*?)\)/)[1];
-        imageUrls.push({ url, date: Date.now() });
-      });
-    }
-  });
-  
-  return imageUrls;
-}
+import { format } from 'date-fns';
 
 export default function LibraryScreen() {
   const colorScheme = useColorScheme();
-  const { chats } = useChatService();
-  
-  const generatedImages = chats.reduce((images, chat) => {
-    const chatImages = extractImageUrls(chat.messages);
-    return [...images, ...chatImages];
-  }, [] as { url: string, date: number }[]);
+  const { generatedImages } = useChatService();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -80,6 +60,9 @@ export default function LibraryScreen() {
                   resizeMode="cover"
                 />
                 <View style={styles.imageOverlay}>
+                  <Text style={styles.imageDate}>
+                    {format(image.createdAt, 'MMM d, yyyy')}
+                  </Text>
                   <Pressable
                     style={[
                       styles.viewButton,
@@ -141,10 +124,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 48,
+    padding: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  imageDate: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
   },
   viewButton: {
     flexDirection: 'row',
