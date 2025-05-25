@@ -24,25 +24,15 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 1,
+        quality: 0.7, // Reduced quality for better performance
         base64: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        
-        // Convert image to base64 if not already
-        let base64Data = asset.base64;
-        if (!base64Data && asset.uri) {
-          const fileContent = await FileSystem.readAsStringAsync(asset.uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          base64Data = fileContent;
-        }
-
         onUpload({
-          ...asset,
-          base64: base64Data,
+          name: 'image.jpg',
+          uri: asset.uri,
           type: 'image',
         });
       }
@@ -61,15 +51,9 @@ export function UploadButton({ onUpload }: UploadButtonProps) {
 
       if (result.assets && result.assets[0]) {
         const asset = result.assets[0];
-        
-        // Read file content as base64
-        const base64Data = await FileSystem.readAsStringAsync(asset.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
         onUpload({
-          ...asset,
-          base64: base64Data,
+          name: asset.name,
+          uri: asset.uri,
           type: 'document',
         });
       }
