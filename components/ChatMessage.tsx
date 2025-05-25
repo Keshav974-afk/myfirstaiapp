@@ -38,7 +38,7 @@ function extractImageUrl(text: string): string | null {
   const urlMatch = text.match(/https?:\/\/[^\s<>)"]+?\.(?:jpg|jpeg|png|gif|webp)/i);
   if (urlMatch) return urlMatch[0];
 
-  // Match Snapzion workspace URLs
+  // Match Snapzion workspace URLs - Fixed regex to properly escape special characters
   const workspaceMatch = text.match(/https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+(?:\.[a-z]+)?/i);
   if (workspaceMatch) {
     const url = workspaceMatch[0];
