@@ -22,7 +22,6 @@ export interface AIModel {
   description?: string;
   maxTokens?: number;
   color?: string;
-  available?: boolean;
 }
 
 export interface ChatResponse {
