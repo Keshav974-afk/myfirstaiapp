@@ -1,7 +1,7 @@
 import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { Copy, CircleCheck as CheckCircle2, Volume2, Share2, Bookmark, CreditCard as Edit3 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
 import * as Sharing from 'expo-sharing';
@@ -67,6 +67,21 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const scale = useSharedValue(1);
+
+  // Add event listener for clicks outside the message
+  useEffect(() => {
+    if (!showActions) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.message-actions') && !target.closest('.message-bubble')) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showActions]);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(message);
@@ -148,7 +163,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
         <Pressable 
           style={styles.messageWrapper}
           onLongPress={() => setShowActions(true)}
-          onPress={() => setShowActions(false)}
+          className="message-bubble"
         >
           <View style={[
             styles.bubble,
@@ -183,6 +198,7 @@ export function ChatMessage({ message, isUser, animate = false, onEdit }: ChatMe
               styles.actionButtonsContainer,
               { backgroundColor: Colors[colorScheme ?? 'light'].background }
             ]}
+            className="message-actions"
           >
             <View style={styles.actionButtons}>
               <Pressable 
@@ -307,7 +323,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '100%',
     left: '50%',
-    transform: [{ translateX: -100 }], // Half of the total width
+    transform: [{ translateX: -100 }],
     marginTop: 8,
     borderRadius: 24,
     zIndex: 1000,
@@ -321,7 +337,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     padding: 6,
-    width: 200, // Fixed width for better positioning
+    width: 200,
     justifyContent: 'space-around',
   },
   actionButton: {
