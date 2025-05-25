@@ -96,11 +96,9 @@ export function useChatService() {
         const { done, value } = await reader.read();
         if (done) break;
 
-        // Convert chunk to text and add to buffer
         const chunk = new TextDecoder().decode(value);
         buffer += chunk;
 
-        // Process complete lines from buffer
         let newlineIndex;
         while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
           const line = buffer.slice(0, newlineIndex);
@@ -196,33 +194,48 @@ export function useChatService() {
     await saveChatHistory(updatedChats, currentChatId);
 
     try {
-      const formData = new FormData();
-      
-      // Add message data
-      formData.append('model', selectedModel.id);
-      formData.append('messages', JSON.stringify(updatedMessages.map(msg => ({ 
-        role: msg.role, 
-        content: msg.content 
-      }))));
-      formData.append('temperature', '0.7');
-      formData.append('stream', String(streamingEnabled));
+      const requestBody = {
+        model: selectedModel.id,
+        messages: updatedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        temperature: 0.7,
+        stream: streamingEnabled
+      };
 
-      // Add file if present
       if (file) {
+        const formData = new FormData();
         formData.append('file', {
           uri: file.uri,
           type: file.mimeType,
           name: file.name || 'file',
         });
+        Object.entries(requestBody).forEach(([key, value]) => {
+          formData.append(key, typeof value === 'string' ? value : JSON.stringify(value));
+        });
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload file');
+        }
       }
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -231,21 +244,19 @@ export function useChatService() {
         try {
           const errorData = await response.json();
           if (errorData.error?.message) {
-            // Check for model availability error
             if (errorData.error.message.includes('无可用渠道')) {
-              errorMessage = `The selected model "${selectedModel.name}" is not available. Please select a different model.`;
+              errorMessage = `The selected model "${selectedModel.name}" is not available. Please try GPT-3.5 Turbo or another model.`;
             } else {
               errorMessage = errorData.error.message;
             }
           }
         } catch (e) {
-          // If we can't parse the error JSON, use status-based messages
           if (response.status === 400) {
-            errorMessage = 'Please wait, we have received too many requests. Try again later.';
+            errorMessage = 'Invalid request. Please try again later.';
           } else if (response.status === 401) {
             errorMessage = 'Invalid API key. Please check your settings.';
           } else if (response.status === 403) {
-            errorMessage = 'You do not have permission to use this model. Please select a different model.';
+            errorMessage = 'Access denied. Please check your API key permissions.';
           }
         }
         
