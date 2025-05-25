@@ -67,32 +67,29 @@ export function useChatService() {
   const extractImageUrls = (content: string): string[] => {
     const urls: string[] = [];
 
-    // Extract markdown image URLs with various formats
-    const markdownPatterns = [
-      /!\[.*?\]\((.*?)\)/g,  // Standard markdown
-      /\[!.*?\]\((.*?)\)/g,  // Alternative markdown
-      /\[.*?\]\((.*?\.(?:jpg|jpeg|png|gif|webp))\)/gi // Image file extensions
-    ];
-
-    markdownPatterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.exec(content)) !== null) {
-        if (match[1]) urls.push(match[1].trim());
-      }
-    });
-
-    // Extract workspace-specific URLs
-    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.(?:png|jpg|jpeg|gif|webp)/gi;
-    let workspaceMatch;
-    while ((workspaceMatch = workspacePattern.exec(content)) !== null) {
-      urls.push(workspaceMatch[0].trim());
+    // Match standard markdown images: ![alt](url)
+    const markdownPattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    let match;
+    while ((match = markdownPattern.exec(content)) !== null) {
+      if (match[2]) urls.push(match[2].trim());
     }
 
-    // Extract direct URLs
-    const urlPattern = /https?:\/\/[^\s<>"]+?\/[^\s<>"]+?\.(?:png|jpe?g|gif|webp|bmp)/gi;
-    let urlMatch;
-    while ((urlMatch = urlPattern.exec(content)) !== null) {
-      urls.push(urlMatch[0].trim());
+    // Match alternative format: [!alt](url)
+    const altPattern = /\[!([^\]]*)\]\(([^)]+)\)/g;
+    while ((match = altPattern.exec(content)) !== null) {
+      if (match[2]) urls.push(match[2].trim());
+    }
+
+    // Match direct image URLs
+    const urlPattern = /https?:\/\/[^\s<>)"]+?\.(?:jpg|jpeg|png|gif|webp)/gi;
+    while ((match = urlPattern.exec(content)) !== null) {
+      urls.push(match[0].trim());
+    }
+
+    // Match Snapzion workspace URLs
+    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.[a-z]+/gi;
+    while ((match = workspacePattern.exec(content)) !== null) {
+      urls.push(match[0].trim());
     }
 
     // Remove duplicates and validate URLs
@@ -108,6 +105,7 @@ export function useChatService() {
 
   const addGeneratedImage = useCallback((imageUrl: string) => {
     try {
+      // Validate and normalize the URL
       const url = new URL(imageUrl);
       
       setGeneratedImages(prev => {
