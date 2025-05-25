@@ -116,12 +116,12 @@ export default function ChatScreen() {
 
     let prompt = '';
     if (file.type === 'image') {
-      prompt = `[Analyzing image...]\n\nI'm sharing an image with you. Please analyze this image at ${file.uri} and describe what you see in detail.`;
+      prompt = `[Analyzing image...]\n\nI'm sharing an image with you. Please analyze this image and describe what you see in detail.`;
     } else {
-      prompt = `[Analyzing document: ${file.name}]\n\nPlease help me understand or analyze this document at ${file.uri}.`;
+      prompt = `[Analyzing document: ${file.name}]\n\nPlease help me understand or analyze this document.`;
     }
 
-    await sendMessage(prompt);
+    await sendMessage(prompt, file);
   };
 
   const handleSpeechResult = (text: string) => {
