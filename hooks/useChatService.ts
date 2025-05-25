@@ -42,12 +42,17 @@ export function useChatService() {
   }, []);
 
   const createNewChat = useCallback(() => {
+    if (!selectedModel) {
+      setError('Please select an AI model before starting a chat.');
+      return null;
+    }
+
     const newChat: Chat = {
       id: Date.now().toString(),
       title: 'New Chat',
       messages: [],
       createdAt: Date.now(),
-      model: selectedModel?.id || 'unknown'
+      model: selectedModel.id
     };
     
     const updatedChats = [newChat, ...(chats || [])];
@@ -141,8 +146,17 @@ export function useChatService() {
   };
 
   const sendMessage = useCallback(async (message: string, file?: any) => {
-    if (!apiKey || !apiUrl || !selectedModel) {
-      setError('API key, URL, or model not set. Please check your settings.');
+    // Validate required settings
+    if (!apiKey) {
+      setError('API key not set. Please check your settings.');
+      return;
+    }
+    if (!apiUrl) {
+      setError('API URL not set. Please check your settings.');
+      return;
+    }
+    if (!selectedModel) {
+      setError('Please select an AI model before sending a message.');
       return;
     }
 
@@ -152,6 +166,10 @@ export function useChatService() {
     let currentChatId = activeChat;
     if (!currentChatId) {
       currentChatId = createNewChat();
+      if (!currentChatId) {
+        setIsLoading(false);
+        return;
+      }
     }
 
     const currentChat = chats?.find(chat => chat.id === currentChatId);
@@ -208,12 +226,30 @@ export function useChatService() {
       });
 
       if (!response.ok) {
-        if (response.status === 400) {
-          setError('Please wait, we have received too many requests. Try again later.');
-          return;
+        let errorMessage = 'Failed to communicate with AI service';
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.error?.message) {
+            // Check for model availability error
+            if (errorData.error.message.includes('无可用渠道')) {
+              errorMessage = `The selected model "${selectedModel.name}" is not available. Please select a different model.`;
+            } else {
+              errorMessage = errorData.error.message;
+            }
+          }
+        } catch (e) {
+          // If we can't parse the error JSON, use status-based messages
+          if (response.status === 400) {
+            errorMessage = 'Please wait, we have received too many requests. Try again later.';
+          } else if (response.status === 401) {
+            errorMessage = 'Invalid API key. Please check your settings.';
+          } else if (response.status === 403) {
+            errorMessage = 'You do not have permission to use this model. Please select a different model.';
+          }
         }
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to get response from AI');
+        
+        throw new Error(errorMessage);
       }
 
       if (streamingEnabled && response.body) {
