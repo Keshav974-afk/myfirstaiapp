@@ -67,28 +67,35 @@ export function useChatService() {
   const extractImageUrls = (content: string): string[] => {
     const urls: string[] = [];
 
-    // Extract markdown image URLs
-    const markdownPattern = /!\[.*?\]\((.*?)\)/g;
-    let match;
-    while ((match = markdownPattern.exec(content)) !== null) {
-      if (match[1]) urls.push(match[1].trim());
-    }
+    // Extract markdown image URLs with various formats
+    const markdownPatterns = [
+      /!\[.*?\]\((.*?)\)/g,  // Standard markdown
+      /\[!.*?\]\((.*?)\)/g,  // Alternative markdown
+      /\[.*?\]\((.*?\.(?:jpg|jpeg|png|gif|webp))\)/gi // Image file extensions
+    ];
 
-    // Extract direct URLs
-    const urlPattern = /https?:\/\/[^\s<>"]+?\/[^\s<>"]+?\.(png|jpe?g|gif|webp|bmp)/g;
-    let urlMatch;
-    while ((urlMatch = urlPattern.exec(content)) !== null) {
-      urls.push(urlMatch[0].trim());
-    }
+    markdownPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        if (match[1]) urls.push(match[1].trim());
+      }
+    });
 
-    // Extract workspace URLs
-    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[^\s<>"]+/g;
+    // Extract workspace-specific URLs
+    const workspacePattern = /https:\/\/cdn\.snapzion\.com\/workspace-[a-f0-9-]+\/image\/[a-f0-9-]+\.(?:png|jpg|jpeg|gif|webp)/gi;
     let workspaceMatch;
     while ((workspaceMatch = workspacePattern.exec(content)) !== null) {
       urls.push(workspaceMatch[0].trim());
     }
 
-    // Remove duplicates and filter valid URLs
+    // Extract direct URLs
+    const urlPattern = /https?:\/\/[^\s<>"]+?\/[^\s<>"]+?\.(?:png|jpe?g|gif|webp|bmp)/gi;
+    let urlMatch;
+    while ((urlMatch = urlPattern.exec(content)) !== null) {
+      urls.push(urlMatch[0].trim());
+    }
+
+    // Remove duplicates and validate URLs
     return [...new Set(urls)].filter(url => {
       try {
         new URL(url);
