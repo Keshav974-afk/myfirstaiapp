@@ -1,44 +1,34 @@
-import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
-import { BookOpen, Star, Clock, Download } from 'lucide-react-native';
+import { Image as ImageIcon, ExternalLink } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { useChatService } from '@/hooks/useChatService';
 
-const SECTIONS = [
-  {
-    title: 'Saved',
-    icon: Star,
-    items: [
-      'Research Paper Analysis',
-      'Marketing Strategy',
-      'Code Review Guidelines',
-      'Product Roadmap',
-    ]
-  },
-  {
-    title: 'Recent',
-    icon: Clock,
-    items: [
-      'Data Analysis Report',
-      'Blog Post Draft',
-      'Meeting Summary',
-      'Project Timeline',
-    ]
-  },
-  {
-    title: 'Downloads',
-    icon: Download,
-    items: [
-      'Generated Images',
-      'PDF Reports',
-      'Code Snippets',
-      'Presentation Slides',
-    ]
-  },
-];
+function extractImageUrls(messages: any[]): { url: string, date: number }[] {
+  const imageUrls: { url: string, date: number }[] = [];
+  
+  messages.forEach(message => {
+    const matches = message.content.match(/!\[.*?\]\((.*?)\)/g);
+    if (matches) {
+      matches.forEach(match => {
+        const url = match.match(/!\[.*?\]\((.*?)\)/)[1];
+        imageUrls.push({ url, date: Date.now() });
+      });
+    }
+  });
+  
+  return imageUrls;
+}
 
 export default function LibraryScreen() {
   const colorScheme = useColorScheme();
+  const { chats } = useChatService();
+  
+  const generatedImages = chats.reduce((images, chat) => {
+    const chatImages = extractImageUrls(chat.messages);
+    return [...images, ...chatImages];
+  }, [] as { url: string, date: number }[]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -50,59 +40,66 @@ export default function LibraryScreen() {
           styles.title,
           { color: Colors[colorScheme ?? 'light'].text }
         ]}>
-          Library
+          Generated Images
         </Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        {SECTIONS.map((section, index) => (
-          <View key={index} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <section.icon 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].tint} 
-              />
-              <Text style={[
-                styles.sectionTitle,
-                { color: Colors[colorScheme ?? 'light'].text }
-              ]}>
-                {section.title}
-              </Text>
-            </View>
-
-            <View style={styles.itemsList}>
-              {section.items.map((item, itemIndex) => (
-                <Pressable
-                  key={itemIndex}
-                  style={[
-                    styles.itemCard,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
-                  ]}
-                >
-                  <BookOpen 
-                    size={20} 
-                    color={Colors[colorScheme ?? 'light'].textSecondary} 
-                  />
-                  <View style={styles.itemContent}>
-                    <Text style={[
-                      styles.itemTitle,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}>
-                      {item}
-                    </Text>
-                    <Text style={[
-                      styles.itemDate,
-                      { color: Colors[colorScheme ?? 'light'].textSecondary }
-                    ]}>
-                      Last modified: 2 days ago
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
+      {generatedImages.length === 0 ? (
+        <View style={styles.emptyState}>
+          <ImageIcon 
+            size={48} 
+            color={Colors[colorScheme ?? 'light'].textSecondary} 
+          />
+          <Text style={[
+            styles.emptyStateTitle,
+            { color: Colors[colorScheme ?? 'light'].text }
+          ]}>
+            No Generated Images Yet
+          </Text>
+          <Text style={[
+            styles.emptyStateText,
+            { color: Colors[colorScheme ?? 'light'].textSecondary }
+          ]}>
+            Images generated from your chats will appear here
+          </Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.content}>
+          <View style={styles.imageGrid}>
+            {generatedImages.map((image, index) => (
+              <View 
+                key={index}
+                style={[
+                  styles.imageCard,
+                  { backgroundColor: Colors[colorScheme ?? 'light'].inputBackground }
+                ]}
+              >
+                <Image
+                  source={{ uri: image.url }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+                <View style={styles.imageOverlay}>
+                  <Pressable
+                    style={[
+                      styles.viewButton,
+                      { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+                    ]}
+                    onPress={() => {
+                      if (Platform.OS === 'web') {
+                        window.open(image.url, '_blank');
+                      }
+                    }}
+                  >
+                    <ExternalLink size={16} color="#FFFFFF" />
+                    <Text style={styles.viewButtonText}>View Full</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
           </View>
-        ))}
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -124,39 +121,61 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
+  imageGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: 16,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    marginLeft: 8,
-  },
-  itemsList: {
-    gap: 12,
-  },
-  itemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+  imageCard: {
+    width: '48%',
+    aspectRatio: 1,
     borderRadius: 12,
+    overflow: 'hidden',
   },
-  itemContent: {
-    marginLeft: 12,
-    flex: 1,
+  image: {
+    width: '100%',
+    height: '100%',
   },
-  itemTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    marginBottom: 4,
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 48,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  itemDate: {
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  viewButtonText: {
+    color: '#FFFFFF',
+    marginLeft: 6,
     fontSize: 12,
+    fontFamily: 'Inter-Medium',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
+    textAlign: 'center',
+    maxWidth: 300,
   },
 });
