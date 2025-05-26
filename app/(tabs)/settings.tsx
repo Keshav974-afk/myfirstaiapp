@@ -8,16 +8,18 @@ import {
   ScrollView, 
   Pressable, 
   Alert,
-  useColorScheme
+  useColorScheme,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Trash2, RefreshCw, Info } from 'lucide-react-native';
+import { Trash2, RefreshCw, Info, Sun, Moon, Smartphone } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useChatService } from '@/hooks/useChatService';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme();
   const { 
     apiKey, 
     setApiKey, 
@@ -26,7 +28,10 @@ export default function SettingsScreen() {
     streamingEnabled, 
     setStreamingEnabled,
     webSearchEnabled,
-    setWebSearchEnabled
+    setWebSearchEnabled,
+    theme,
+    setTheme,
+    colorScheme
   } = useAppSettings();
   const { clearChatHistory } = useChatService();
   const [tempApiKey, setTempApiKey] = useState(apiKey);
@@ -93,6 +98,10 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleThemeChange = (newTheme: 'light' | 'dark' | null) => {
+    setTheme(newTheme);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={[
@@ -108,6 +117,113 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView}>
+        <View style={[
+          styles.section,
+          { borderBottomColor: Colors[colorScheme ?? 'light'].border }
+        ]}>
+          <Text style={[
+            styles.sectionTitle,
+            { color: Colors[colorScheme ?? 'light'].text }
+          ]}>
+            Appearance
+          </Text>
+
+          <View style={styles.themeButtons}>
+            <Pressable
+              style={[
+                styles.themeButton,
+                theme === 'light' && {
+                  backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent,
+                  borderColor: Colors[colorScheme ?? 'light'].tint,
+                },
+                { borderColor: Colors[colorScheme ?? 'light'].border }
+              ]}
+              onPress={() => handleThemeChange('light')}
+            >
+              <Sun
+                size={20}
+                color={
+                  theme === 'light'
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].textSecondary
+                }
+              />
+              <Text style={[
+                styles.themeButtonText,
+                {
+                  color: theme === 'light'
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].text
+                }
+              ]}>
+                Light
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.themeButton,
+                theme === 'dark' && {
+                  backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent,
+                  borderColor: Colors[colorScheme ?? 'light'].tint,
+                },
+                { borderColor: Colors[colorScheme ?? 'light'].border }
+              ]}
+              onPress={() => handleThemeChange('dark')}
+            >
+              <Moon
+                size={20}
+                color={
+                  theme === 'dark'
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].textSecondary
+                }
+              />
+              <Text style={[
+                styles.themeButtonText,
+                {
+                  color: theme === 'dark'
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].text
+                }
+              ]}>
+                Dark
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.themeButton,
+                theme === null && {
+                  backgroundColor: Colors[colorScheme ?? 'light'].tintTransparent,
+                  borderColor: Colors[colorScheme ?? 'light'].tint,
+                },
+                { borderColor: Colors[colorScheme ?? 'light'].border }
+              ]}
+              onPress={() => handleThemeChange(null)}
+            >
+              <Smartphone
+                size={20}
+                color={
+                  theme === null
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].textSecondary
+                }
+              />
+              <Text style={[
+                styles.themeButtonText,
+                {
+                  color: theme === null
+                    ? Colors[colorScheme ?? 'light'].tint
+                    : Colors[colorScheme ?? 'light'].text
+                }
+              ]}>
+                System
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
         <View style={[
           styles.section,
           { borderBottomColor: Colors[colorScheme ?? 'light'].border }
@@ -422,5 +538,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     lineHeight: 20,
-  }
+  },
+  themeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  themeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  themeButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  },
 });
