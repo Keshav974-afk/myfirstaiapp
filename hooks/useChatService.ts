@@ -176,7 +176,9 @@ export function useChatService() {
 
           if (line.startsWith('data: ')) {
             try {
-              const jsonData = JSON.parse(line.slice(5));
+              // Remove any unexpected 'd' characters that might appear before the JSON
+              const cleanedData = line.slice(5).replace(/^d+(?={)/, '');
+              const jsonData = JSON.parse(cleanedData);
               const content = jsonData.choices?.[0]?.delta?.content || '';
               
               if (content) {
@@ -202,6 +204,8 @@ export function useChatService() {
               }
             } catch (e) {
               console.warn('Error parsing streaming data:', e);
+              // Continue processing even if one chunk fails
+              continue;
             }
           }
         }
