@@ -7,6 +7,8 @@ import { SplashScreen } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppSettingsProvider } from '@/hooks/useAppSettings';
+import { NetworkStatusProvider } from '@/hooks/useNetworkStatus';
+import { NetworkStatus } from '@/components/NetworkStatus';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -34,13 +36,16 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <AppSettingsProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </AppSettingsProvider>
+      <NetworkStatusProvider>
+        <AppSettingsProvider>
+          <NetworkStatus />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </AppSettingsProvider>
+      </NetworkStatusProvider>
     </GestureHandlerRootView>
   );
 }

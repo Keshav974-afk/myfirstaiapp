@@ -2,9 +2,21 @@ import { Tabs } from 'expo-router';
 import { useColorScheme, Platform } from 'react-native';
 import { MessageSquare, Search, Library, Settings } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { useEffect } from 'react';
+import NetInfo from '@react-native-community/netinfo';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { isConnected, setIsConnected } = useNetworkStatus();
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected ?? false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <Tabs
